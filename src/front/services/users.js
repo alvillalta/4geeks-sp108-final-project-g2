@@ -1,4 +1,4 @@
-const host = "https://solid-funicular-7vwp9pp57j4p2pwpq-3001.app.github.dev";
+const host = "https://turbo-zebra-r4wpgpp679jvh5644-3001.app.github.dev";
 
 export const modifyUser = async (userId, userToPut) => {
   const uri = `${host}/api/users/${userId}`;

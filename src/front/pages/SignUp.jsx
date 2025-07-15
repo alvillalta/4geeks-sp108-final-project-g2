@@ -27,6 +27,7 @@ export const SignUp = () => {
             "last_name": lastName
         };
         const userRegistered = await register(userToPost);
+        console.log(userRegistered);
         localStorage.setItem("token", userRegistered.access_token);
         dispatch({
             type: "LOGIN",

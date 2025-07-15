@@ -46,6 +46,7 @@ def register():
     access_token = create_access_token(identity=user.email, additional_claims=claims)
 
     response_body["results"] = user.serialize()
+    response_body["access_token"] = access_token
     response_body["message"] = f"User {user.id} posted successfully"
     return jsonify(response_body), 201
 
@@ -76,6 +77,7 @@ def login():
     access_token = create_access_token(identity=email, additional_claims=claims)
 
     response_body["access_token"] = access_token
+    response_body["results"] = user.serialize()
     response_body["message"] = f"User {user.email} logged successfully"
     return jsonify(response_body), 200
 
