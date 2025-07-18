@@ -27,15 +27,17 @@ export const Navbar = () => {
                 payload: { token: "", isLogged: false }
             });
 			navigate("/");
-		} 
-		navigate("/login");
+		} else {
+			navigate("/login");
+		}
 	}
 
 	const handleSignUp = () => {
 		if (store.login.isLogged) {
-			navigate("/user-settings")
+			navigate("/settings")
+		} else {
+			navigate("/signup");
 		}
-		navigate("/signup");
 	}
 
 	//  Render

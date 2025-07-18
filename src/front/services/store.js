@@ -12,7 +12,8 @@ export const initialStore = () => {
     login: {
       token: "",
       isLogged: false
-    }
+    },
+    currentUser: {}
   };
 };
 
@@ -21,6 +22,9 @@ export default function storeReducer(store, action = {}) {
 
     case "LOGIN":
       return { ...store, login: action.payload };
+
+    case "CURRENT-USER":
+      return { ...store, currentUser: action.payload };
       
     case "GET-AGENDA":
       return { ...store, contacts: action.payload };

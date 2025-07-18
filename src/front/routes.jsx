@@ -8,7 +8,7 @@ import { Layout } from "./pages/Layout.jsx";
 import { Home } from "./pages/Home.jsx";
 import { Login } from "./pages/Login.jsx";
 import { SignUp } from "./pages/SignUp.jsx";
-import { UserSettings } from "./pages/UserSettings.jsx";
+import { Settings } from "./pages/Settings.jsx";
 import { ContactList } from "./pages/ContactList.jsx";
 import { AddContact } from "./pages/AddContact.jsx";
 import { EditContact } from "./pages/EditContact.jsx";
@@ -34,7 +34,7 @@ export const router = createBrowserRouter(
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
-      <Route path="/user-settings" element={<UserSettings />} />
+      <Route path="/settings" element={<Settings />} />
       <Route path="/contacts" element={<ContactList />} />
       <Route path="/contacts/add-contact" element={<AddContact />} />
       <Route path="/contacts/edit-contact" element={<EditContact />} />

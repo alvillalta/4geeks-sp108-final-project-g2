@@ -1,49 +1,36 @@
 import React, { useState } from "react"
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { useNavigate } from "react-router-dom";
-import { register } from "../services/auth.js"
+import { modifyUser } from "../services/users.js"
 
 
-export const SignUp = () => {
+export const Settings = () => {
     const navigate = useNavigate();
     const { store, dispatch } = useGlobalReducer();
+    const user = store.currentUser
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
+    const [firstName, setFirstName] = useState(user.first_name);
+    const [lastName, setLastName] = useState(user.last_name);
 
-    const handleEmail = event => setEmail(event.target.value);
-    const handlePassword = event => setPassword(event.target.value);
     const handleFirstName = event => setFirstName(event.target.value);
     const handleLastName = event => setLastName(event.target.value);
 
     const handleSubmitSignUp = async (event) => {
         event.preventDefault();
-        const userToPost = {
-            "email": email,
-            "password": password,
+        const id = user.id
+        const userToPut = {
             "first_name": firstName,
             "last_name": lastName
         };
-        const userRegistered = await register(userToPost);
-        localStorage.setItem("token", userRegistered.access_token);
-        dispatch({
-            type: "LOGIN",
-            payload: { token: userRegistered.access_token, isLogged: true }
-        });
+        const userSettings = await modifyUser(id, userToPut);
         dispatch({
             type: "CURRENT-USER",
-            payload: userRegistered.results
+            payload: userSettings.results
         });
         navigate("/");
     }
 
     const handleCancel = () => {
-        setEmail("");
-        setPassword("");
-        setFirstName("");
-        setLastName("");
         navigate("/");
     }
 
@@ -51,7 +38,7 @@ export const SignUp = () => {
         <div className="d-flex justify-content-center my-4">
             <div className="col-10 col-md-6 col-lg-4 rounded-4 shadow">
                 <div className="d-flex align-items-end justify-content-between p-5 pb-4 border-bottom-0">
-                    <h1 className="fw-bold mb-0 fs-2">Sign Up</h1>
+                    <h1 className="fw-bold mb-0 fs-2">Settings</h1>
                     <button onClick={handleCancel} type="button" className="border-0 bg-transparent text-secondary">
                         <i className="fa-solid fa-xmark fa-xl"></i>
                     </button>
@@ -68,17 +55,7 @@ export const SignUp = () => {
                             <input type="text" className="form-control rounded-3" id="signUpLastName" placeholder="Your last name"
                                 value={lastName} onChange={handleLastName} />
                         </div>
-                        <div className="mb-3">
-                            <label htmlFor="signUpEmail" className="mb-2">Email address</label>
-                            <input type="email" className="form-control rounded-3" id="signUpEmail" placeholder="name@example.com"
-                                value={email} onChange={handleEmail} />
-                        </div>
-                        <div className="mb-4">
-                            <label htmlFor="signUpPassword" className="mb-2">Password</label>
-                            <input type="password" className="form-control rounded-3" id="signUpPassword" placeholder="Password"
-                                value={password} onChange={handlePassword} />
-                        </div>
-                        <button className="w-100 my-2 btn btn-lg rounded-3 btn-success" type="submit">Sign Up</button>
+                        <button className="w-100 my-2 btn btn-lg rounded-3 btn-success" type="submit">Save</button>
                     </form>
                 </div>
             </div>

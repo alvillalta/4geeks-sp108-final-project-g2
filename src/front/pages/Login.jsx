@@ -15,25 +15,29 @@ export const Login = () => {
     const handlePassword = event => setPassword(event.target.value);
 
     const handleSubmitLogin = async (event) => {
-            event.preventDefault();
-            const userToLogin = {
-                "email": email,
-                "password": password,
-            }
-            const userLogged = await login(userToLogin);
-            localStorage.setItem("token", userLogged.access_token);
-            dispatch({
-                type: "LOGIN",
-                payload: { token: userLogged.access_token, isLogged: true }
-            });
-            navigate("/");
-        } 
-    
-        const handleCancel = () => {
-            setEmail("");
-            setPassword("");
-            navigate("/");
+        event.preventDefault();
+        const userToLogin = {
+            "email": email,
+            "password": password,
         }
+        const userLogged = await login(userToLogin);
+        localStorage.setItem("token", userLogged.access_token);
+        dispatch({
+            type: "LOGIN",
+            payload: { token: userLogged.access_token, isLogged: true }
+        });
+        dispatch({
+            type: "CURRENT-USER",
+            payload: userLogged.results
+        });
+        navigate("/");
+    }
+
+    const handleCancel = () => {
+        setEmail("");
+        setPassword("");
+        navigate("/");
+    }
 
     return (
         <div className="d-flex justify-content-center my-4">
@@ -49,12 +53,12 @@ export const Login = () => {
                         <div className="mb-3">
                             <label htmlFor="loginEmail" className="mb-2">Email address</label>
                             <input type="email" className="form-control rounded-3" id="loginEmail" placeholder="name@example.com"
-                            value={email} onChange={handleEmail}/>
+                                value={email} onChange={handleEmail} />
                         </div>
                         <div className="mb-4">
                             <label htmlFor="loginPassword" className="mb-2">Password</label>
                             <input type="password" className="form-control rounded-3" id="loginPassword" placeholder="Password"
-                            value={password} onChange={handlePassword}/>
+                                value={password} onChange={handlePassword} />
                         </div>
                         <button className="w-100 my-2 btn btn-lg rounded-3 btn-success" type="submit">Log In</button>
                         <hr className="my-4" />
