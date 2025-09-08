@@ -23,10 +23,6 @@ class Users(db.Model):
                 "is_admin": self.is_admin,
                 "first_name": self.first_name,
                 "last_name": self.last_name,
-                "followers": [row.serialize()["follower_id"] for row in self.following_to],
-                "following": [row.serialize()["following_id"] for row in self.follower_to],
-                "posts": [row.serialize()["id"] for row in self.user_posts],
-                "comments": [row.serialize() for row in self.user_comments],
                 "character_favorites": [row.character_to.serialize() for row in self.user_character_favorites],
                 "planet_favorites": [row.planet_to.serialize() for row in self.user_planet_favorites],
                 "starship_favorites": [row.starship_to.serialize() for row in self.user_starship_favorites]}
