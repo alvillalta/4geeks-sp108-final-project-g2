@@ -23,9 +23,9 @@ export const Navbar = () => {
 		if (store.login.isLogged) {
 			localStorage.removeItem("token");
 			dispatch({
-                type: "LOGIN",
-                payload: { token: "", isLogged: false }
-            });
+				type: "LOGIN",
+				payload: { token: "", isLogged: false }
+			});
 			navigate("/");
 		} else {
 			navigate("/login");
@@ -55,20 +55,20 @@ export const Navbar = () => {
 				</div>
 				<div className="col-12 col-lg-4 mb-5 mb-lg-0">
 					<div className="d-flex flex-column flex-lg-row justify-content-center align-items-center">
-						<Link to="/characters" className="mb-3 mb-lg-0">
+						<Link to="/characters" className="mb-3 mb-lg-0 text-decoration-none">
 							<span className="navbar-brand mb-0 me-0 me-lg-3 h1">Characters</span>
 						</Link>
-						<Link to="/planets" className="mb-3 mb-lg-0">
+						<Link to="/planets" className="mb-3 mb-lg-0 text-decoration-none">
 							<span className="navbar-brand mb-0 me-0 me-lg-3 h1">Planets</span>
 						</Link>
-						<Link to="/starships" className="mb-3 mb-lg-0">
+						<Link to="/starships" className="mb-3 mb-lg-0 text-decoration-none">
 							<span className="navbar-brand mb-0 me-0 me-lg-3 h1">Starships</span>
 						</Link>
-						<Link to="/contacts" className="mb-3 mb-lg-0">
+						<Link to="/contacts" className="mb-3 mb-lg-0 text-decoration-none">
 							<span className="navbar-brand mb-0 me-0 me-lg-3 h1">Contacts</span>
 						</Link>
 						<div className="dropdown">
-							<button className={`btn btn-${favorites.length > 0 ? "primary dropdown-toggle" : "secondary"} position-relative`} type="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<button className={`btn btn-${favorites.length > 0 ? "dark dropdown-toggle" : "secondary"} position-relative`} type="button" data-bs-toggle="dropdown" aria-expanded="false">
 								{favorites.length > 0 ?
 									<span>
 										Favorites
@@ -83,12 +83,22 @@ export const Navbar = () => {
 								}
 							</button>
 							{favorites.length > 0 ?
-								<div className="dropdown-menu dropdown-menu-end">
-									{favorites.map((item) => {
+								<div className="dropdown-menu bg-light">
+									{favorites.map((item, index) => {
 										return (
-											<div key={item.id} className="d-flex justify-content-between p-2">
-												<span>{item.name}</span>
-												<button onClick={() => handleDeleteFavorites(item)} type="button" ><i className="fa-solid fa-xmark"></i></button>
+											<div key={item.id}>
+												<div className="d-flex justify-content-between p-2 gap-2">
+													<span className="ps-2">
+														{item.name}
+													</span>
+													<button onClick={() => handleDeleteFavorites(item)} type="button" className="pe-2 py-0 border-0 bg-transparent">
+														<i className="fa-solid fa-lg fa-xmark"></i>
+													</button>
+												</div>
+												{index == favorites.length -1 ? 
+												<hr className="d-none"></hr>
+												:
+												<hr></hr>}
 											</div>
 										)
 									})}
@@ -101,8 +111,8 @@ export const Navbar = () => {
 				</div>
 				<div className="col-12 col-lg-4">
 					<div className="d-flex flex-column flex-lg-row justify-content-center justify-content-lg-end align-items-center">
-						<button onClick={handleLogIn} type="button" className="btn btn-light text-success border-success mx-3 mb-3 mb-lg-0">{store.login.isLogged ? "Log Out" : "Log In"}</button>
-						<button onClick={handleSignUp} type="button" className="btn btn-success">{store.login.isLogged ? "Settings" : "Sign Up"}</button>
+						<button onClick={handleLogIn} type="button" className="btn btn-light text-dark border-dark mx-3 mb-3 mb-lg-0">{store.login.isLogged ? "Log Out" : "Log In"}</button>
+						<button onClick={handleSignUp} type="button" className="btn btn-dark">{store.login.isLogged ? "Settings" : "Sign Up"}</button>
 					</div>
 				</div>
 			</div>

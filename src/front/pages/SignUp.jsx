@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { register } from "../services/auth.js"
 
 
@@ -52,7 +52,7 @@ export const SignUp = () => {
             <div className="col-10 col-md-6 col-lg-4 rounded-4 shadow">
                 <div className="d-flex align-items-end justify-content-between p-5 pb-4 border-bottom-0">
                     <h1 className="fw-bold mb-0 fs-2">Sign Up</h1>
-                    <button onClick={handleCancel} type="button" className="border-0 bg-transparent text-secondary">
+                    <button onClick={handleCancel} type="button" className="border-0 bg-transparent text-dark">
                         <i className="fa-solid fa-xmark fa-xl"></i>
                     </button>
                 </div>
@@ -78,7 +78,9 @@ export const SignUp = () => {
                             <input type="password" className="form-control rounded-3" id="signUpPassword" placeholder="Password"
                                 value={password} onChange={handlePassword} />
                         </div>
-                        <button className="w-100 my-2 btn btn-lg rounded-3 btn-success" type="submit">Sign Up</button>
+                        <button className="w-100 my-2 btn btn-lg rounded-3 btn-dark" type="submit">Sign Up</button>
+                        <hr className="my-4" />
+                        <p className="text-body-secondary">Already registered? <Link to="/login" className="text-dark">Log In here</Link></p>
                     </form>
                 </div>
             </div>

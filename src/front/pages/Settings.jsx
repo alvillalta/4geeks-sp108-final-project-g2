@@ -39,7 +39,7 @@ export const Settings = () => {
             <div className="col-10 col-md-6 col-lg-4 rounded-4 shadow">
                 <div className="d-flex align-items-end justify-content-between p-5 pb-4 border-bottom-0">
                     <h1 className="fw-bold mb-0 fs-2">Settings</h1>
-                    <button onClick={handleCancel} type="button" className="border-0 bg-transparent text-secondary">
+                    <button onClick={handleCancel} type="button" className="border-0 bg-transparent text-dark">
                         <i className="fa-solid fa-xmark fa-xl"></i>
                     </button>
                 </div>
@@ -55,7 +55,7 @@ export const Settings = () => {
                             <input type="text" className="form-control rounded-3" id="signUpLastName" placeholder="Your last name"
                                 value={lastName} onChange={handleLastName} />
                         </div>
-                        <button className="w-100 my-2 btn btn-lg rounded-3 btn-success" type="submit">Save</button>
+                        <button className="w-100 my-2 btn btn-lg rounded-3 btn-dark" type="submit">Save</button>
                     </form>
                 </div>
             </div>
