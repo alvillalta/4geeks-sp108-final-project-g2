@@ -76,7 +76,6 @@ export const StarshipDetails = () => {
                             <li className="list-group-item"><b>Model:</b>{` ${starshipDetails.model}`}</li>
                             <li className="list-group-item"><b>Cost in credits:</b>{` ${starshipDetails.cost_in_credits}`}</li>
                             <li className="list-group-item"><b>Manufacturer:</b>{` ${starshipDetails.manufacturer}`}</li>
-                            <li className="list-group-item"><b>MGLT:</b>{` ${starshipDetails.MGLT}`}</li>
                             <li className="list-group-item"><b>Starship class:</b>{` ${starshipDetails.starship_class}`}</li>
                             <li className="list-group-item"><b>Hyperdrive rating:</b>{` ${starshipDetails.hyperdrive_rating}`}</li>
                         </ul>
