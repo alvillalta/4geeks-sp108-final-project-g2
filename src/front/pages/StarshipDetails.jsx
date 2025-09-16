@@ -7,14 +7,18 @@ import starWarsImageError from "../assets/star-wars-image-error.jpg";
 export const StarshipDetails = () => {
     const navigate = useNavigate();
     const { starshipId } = useParams();
+    const starshipIdInt = parseInt(starshipId, 10);
+    if (!starshipIdInt) {
+        navigate("/starships");
+    }
     const { store, dispatch } = useGlobalReducer();
     const starshipDetails = store.starshipDetails;
     const starshipFavorites = store.starshipFavorites;
-    const isStarshipFavorite = starshipFavorites.find(favorite => favorite.starship_id === Number(starshipId));
+    const isStarshipFavorite = starshipFavorites.find(favorite => favorite.starship_id === starshipIdInt);
 
     useEffect(() => {
         const initializeStarshipDetails = async () => {
-            const starshipDetailsGot = await getStarshipDetails(starshipId);
+            const starshipDetailsGot = await getStarshipDetails(starshipIdInt);
             dispatch({
                 type: "STARSHIP-DETAILS",
                 payload: starshipDetailsGot
@@ -37,20 +41,20 @@ export const StarshipDetails = () => {
         navigate("/starships");
     }
 
-    const handleStarshipFavorites = async (starshipId, isStarshipFavorite) => {
+    const handleStarshipFavorites = async (starshipIdInt, isStarshipFavorite) => {
         try {
             if (!isStarshipFavorite) {
-                const starshipFavorite = await postStarshipFavorite(starshipId);
+                const starshipFavorite = await postStarshipFavorite(starshipIdInt);
                 dispatch({
                     type: "POST-STARSHIP-FAVORITE",
                     payload: starshipFavorite
                 });
             } else {
-                const responseStatus = await deleteStarshipFavorite(starshipId);
+                const responseStatus = await deleteStarshipFavorite(starshipIdInt);
                 if (responseStatus == 204) {
                     dispatch({
                         type: "DELETE-STARSHIP-FAVORITE",
-                        payload: starshipId
+                        payload: starshipIdInt
                     });
                 }
             } 
@@ -84,7 +88,7 @@ export const StarshipDetails = () => {
                         </ul>
                         <div className="d-flex justify-content-start gap-3 py-3 ps-3">
                             <button onClick={handleBack} className="btn btn-secondary ">Back</button>
-                            <button onClick={() => handleStarshipFavorites(starshipId, isStarshipFavorite)}
+                            <button onClick={() => handleStarshipFavorites(starshipIdInt, isStarshipFavorite)}
                                 type="button" className="p-0 border-0 bg-transparent">
                                 <i className={`fa-${isStarshipFavorite ? "solid" : "regular"} fa-xl fa-heart`}></i>
                             </button>

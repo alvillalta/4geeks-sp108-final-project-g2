@@ -12,7 +12,7 @@ export const Favorites = () => {
 
     const handleCharacterFavorites = async (characterId) => {
             try {
-                if (characterFavorites.find(favorite => Number(favorite.character_id) === Number(characterId))) {
+                if (characterFavorites.find(favorite => favorite.character_id === characterId)) {
                     const responseStatus = await deleteCharacterFavorite(characterId);
                     if (responseStatus == 204) {
                         dispatch({
@@ -28,7 +28,7 @@ export const Favorites = () => {
         
     const handlePlanetFavorites = async (planetId) => {
             try {
-                if (planetFavorites.find(favorite => Number(favorite.planet_id) === Number(planetId))) {
+                if (planetFavorites.find(favorite => favorite.planet_id === planetId)) {
                     const responseStatus = await deletePlanetFavorite(planetId);
                     if (responseStatus == 204) {
                         dispatch({
@@ -44,7 +44,7 @@ export const Favorites = () => {
 
     const handleStarshipFavorites = async (starshipId) => {
             try {
-                if (starshipFavorites.find(favorite => Number(favorite.starship_id) === Number(starshipId))) {
+                if (starshipFavorites.find(favorite => favorite.starship_id === starshipId)) {
                     const responseStatus = await deleteStarshipFavorite(starshipId);
                     if (responseStatus == 204) {
                         dispatch({

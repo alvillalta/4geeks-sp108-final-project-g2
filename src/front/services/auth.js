@@ -41,3 +41,64 @@ export const login = async (userToPost) => {
   return loginOk;
 };
 
+
+export const logout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("character-favorites");
+  localStorage.removeItem("planet-favorites");
+  localStorage.removeItem("starship-favorites");
+  const keys = Object.keys(localStorage);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    if (key.includes("character-details")) {
+      localStorage.removeItem(key);
+    }
+    if (key.includes("planet-details")) {
+      localStorage.removeItem(key);
+    }
+    if (key.includes("starship-details")) {
+      localStorage.removeItem(key);
+    }
+  }
+}
+
+
+export const putUser = async (userId, userToPut) => {
+  const uri = `${host}/api/users/${userId}`;
+  const options = {
+    method: "PUT",
+    headers: {
+      "Content-type": "application/json",
+      "Authorization": `Bearer ${localStorage.getItem("token")}`,
+    },
+    body: JSON.stringify(userToPut),
+  };
+  const response = await fetch(uri, options);
+  if (!response.ok) {
+    const backError = await response.json();
+    throw new Error(backError.message || `Error ${response.status}`);
+  }
+  const userPut = await response.json();
+  localStorage.setItem("user", JSON.stringify(userPut.results));
+  return userPut.results;
+};
+
+
+export const deleteUser = async (userId) => {
+  const uri = `${host}/api/users/${userId}`;
+  const options = {
+    method: "DELETE",
+    headers: {
+      "Content-type": "application/json",
+      "Authorization": `Bearer ${localStorage.getItem("token")}`,
+    },
+  };
+  const response = await fetch(uri, options);
+  if (!response.ok) {
+    const backError = await response.json();
+    throw new Error(backError.message || `Error ${response.status}`);
+  }
+  localStorage.clear();
+  return response.status;
+};

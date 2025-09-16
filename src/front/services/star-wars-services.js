@@ -1,44 +1,4 @@
 const host = import.meta.env.VITE_BACKEND_URL;
-                
-
-export const putUser = async (userId, userToPut) => {
-  const uri = `${host}/api/users/${userId}`;
-  const options = {
-    method: "PUT",
-    headers: {
-      "Content-type": "application/json",
-      "Authorization": `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify(userToPut),
-  };
-  const response = await fetch(uri, options);
-  if (!response.ok) {
-    const backError = await response.json();
-    throw new Error(backError.message || `Error ${response.status}`);
-  }
-  const userPut = await response.json();
-  localStorage.setItem("user", JSON.stringify(userPut.results));
-  return userPut.results;
-};
-
-
-export const deleteUser = async (userId) => {
-  const uri = `${host}/api/users/${userId}`;
-  const options = {
-    method: "DELETE",
-    headers: {
-      "Content-type": "application/json",
-      "Authorization": `Bearer ${localStorage.getItem("token")}`,
-    },
-  };
-  const response = await fetch(uri, options);
-  if (!response.ok) {
-    const backError = await response.json();
-    throw new Error(backError.message || `Error ${response.status}`);
-  }
-  localStorage.clear();
-  return response.status;
-};
 
 
 export const getFavorites = async (userId) => {

@@ -7,14 +7,18 @@ import starWarsImageError from "../assets/star-wars-image-error.jpg";
 export const PlanetDetails = () => {
     const navigate = useNavigate();
     const { planetId } = useParams();
+    const planetIdInt = parseInt(planetId, 10);
+    if (!planetIdInt) {
+        navigate("/planets");
+    }
     const { store, dispatch } = useGlobalReducer();
     const planetDetails = store.planetDetails;
     const planetFavorites = store.planetFavorites;
-    const isPlanetFavorite = planetFavorites.find(favorite => favorite.planet_id === Number(planetId));
+    const isPlanetFavorite = planetFavorites.find(favorite => favorite.planet_id === planetIdInt);
 
     useEffect(() => {
         const initializePlanetDetails = async () => {
-            const planetDetailsGot = await getPlanetDetails(planetId);
+            const planetDetailsGot = await getPlanetDetails(planetIdInt);
             dispatch({
                 type: "PLANET-DETAILS",
                 payload: planetDetailsGot
@@ -37,20 +41,20 @@ export const PlanetDetails = () => {
         navigate("/planets");
     }
 
-    const handlePlanetFavorites = async (planetId, isPlanetFavorite) => {
+    const handlePlanetFavorites = async (planetIdInt, isPlanetFavorite) => {
         try {
             if (!isPlanetFavorite) {
-                const planetFavorite = await postPlanetFavorite(planetId);
+                const planetFavorite = await postPlanetFavorite(planetIdInt);
                 dispatch({
                     type: "POST-PLANET-FAVORITE",
                     payload: planetFavorite
                 });
             } else {
-                const responseStatus = await deleteCharacterFavorite(planetId);
+                const responseStatus = await deleteCharacterFavorite(planetIdInt);
                 if (responseStatus == 204) {
                     dispatch({
                         type: "DELETE-PLANET-FAVORITE",
-                        payload: planetId
+                        payload: planetIdInt
                     });
                 }
             } 
@@ -80,7 +84,7 @@ export const PlanetDetails = () => {
                         </ul>
                         <div className="d-flex justify-content-start gap-3 py-3 ps-3">
                             <button onClick={handleBack} className="btn btn-secondary">Back</button>
-                            <button onClick={() => handlePlanetFavorites(planetId, isPlanetFavorite)}
+                            <button onClick={() => handlePlanetFavorites(planetIdInt, isPlanetFavorite)}
                                 type="button" className="p-0 border-0 bg-transparent">
                                 <i className={`fa-${isPlanetFavorite ? "solid" : "regular"} fa-xl fa-heart`}></i>
                             </button>

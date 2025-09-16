@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import starWarsLogo from "../assets/star-wars-logo.png";
+import { logout } from "../services/auth.js";
 
 export const Navbar = () => {
 	const navigate = useNavigate();
@@ -12,7 +13,7 @@ export const Navbar = () => {
 
 	const handleLogIn = () => {
 		if (store.login.isLogged) {
-			localStorage.clear();
+			logout();
 			dispatch({ type: "LOGOUT" }); 
 			navigate("/");
 		} else {

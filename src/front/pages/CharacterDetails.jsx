@@ -7,15 +7,19 @@ import starWarsImageError from "../assets/star-wars-image-error.jpg";
 
 export const CharacterDetails = () => {
     const navigate = useNavigate();
-    const { characterId } = useParams();;
+    const { characterId } = useParams();
+    const characterIdInt = parseInt(characterId, 10);
+    if (!characterIdInt) {
+        navigate("/characters");
+    }
     const { store, dispatch } = useGlobalReducer();
     const characterDetails = store.characterDetails;
     const characterFavorites = store.characterFavorites;
-    const isCharacterFavorite = characterFavorites.find(favorite => favorite.character_id === Number(characterId));
+    const isCharacterFavorite = characterFavorites.find(favorite => favorite.character_id === characterIdInt);
 
     useEffect(() => {
         const initializeCharacterDetails = async () => {
-            const characterDetailsGot = await getCharacterDetails(characterId);
+            const characterDetailsGot = await getCharacterDetails(characterIdInt);
             dispatch({
                 type: "CHARACTER-DETAILS",
                 payload: characterDetailsGot
@@ -38,20 +42,20 @@ export const CharacterDetails = () => {
         navigate("/characters");
     }
 
-    const handleCharacterFavorites = async (characterId, isCharacterFavorite) => {
+    const handleCharacterFavorites = async (characterIdInt, isCharacterFavorite) => {
         try {
             if (!isCharacterFavorite) {
-                const characterFavorite = await postCharacterFavorite(characterId);
+                const characterFavorite = await postCharacterFavorite(characterIdInt);
                 dispatch({
                     type: "POST-CHARACTER-FAVORITE",
                     payload: characterFavorite
                 });
             } else {
-                const responseStatus = await deleteCharacterFavorite(characterId);
+                const responseStatus = await deleteCharacterFavorite(characterIdInt);
                 if (responseStatus == 204) {
                     dispatch({
                         type: "DELETE-CHARACTER-FAVORITE",
-                        payload: characterId
+                        payload: characterIdInt
                     });
                 }
             } 
@@ -81,7 +85,7 @@ export const CharacterDetails = () => {
                         </ul>
                         <div className="d-flex justify-content-start gap-3 py-3 ps-3">
                             <button onClick={handleBack} className="btn btn-secondary">Back</button>
-                            <button onClick={() => handleCharacterFavorites(characterId, isCharacterFavorite)}
+                            <button onClick={() => handleCharacterFavorites(characterIdInt, isCharacterFavorite)}
                                 type="button" className="p-0 border-0 bg-transparent">
                                 <i className={`fa-${isCharacterFavorite ? "solid" : "regular"} fa-xl fa-heart`}></i>
                             </button>

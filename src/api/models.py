@@ -9,7 +9,6 @@ class Users(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), nullable=False)
     is_active = db.Column(db.Boolean(), default=True, nullable=False)
-    is_admin = db.Column(db.Boolean(), default=False, nullable=False)
     first_name = db.Column(db.String())
     last_name = db.Column(db.String())
 
@@ -20,7 +19,6 @@ class Users(db.Model):
         return {"id": self.id,
                 "email": self.email,
                 "is_active": self.is_active,
-                "is_admin": self.is_admin,
                 "first_name": self.first_name,
                 "last_name": self.last_name}
     
@@ -28,29 +26,30 @@ class Users(db.Model):
         return {"id": self.id,
                 "email": self.email,
                 "is_active": self.is_active,
-                "is_admin": self.is_admin,
                 "first_name": self.first_name,
                 "last_name": self.last_name,
-                "character_favorites": [row.character_to.serialize_cards() for row in self.user_character_favorites] if self.user_character_favorites else [],
-                "planet_favorites": [row.planet_to.serialize_cards() for row in self.user_planet_favorites] if self.user_planet_favorites else [],
-                "starship_favorites": [row.starship_to.serialize_cards() for row in self.user_starship_favorites] if self.user_starship_favorites else []}
+                "character_favorites": [row.serialize() for row in self.user_character_favorite] if self.user_character_favorite else [],
+                "planet_favorites": [row.serialize() for row in self.user_planet_favorite] if self.user_planet_favorite else [],
+                "starship_favorites": [row.serialize() for row in self.user_starship_favorite] if self.user_starship_favorite else []}
 
 
 class CharacterFavorites(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     user_to = db.relationship("Users", foreign_keys=[user_id],
-                              backref=db.backref("user_character_favorites", lazy="select"))
+                              backref=db.backref("user_character_favorite", lazy="select"))
     character_id = db.Column(db.Integer, db.ForeignKey("characters.id"))
     character_to = db.relationship("Characters", foreign_keys=[character_id],
-                                   backref=db.backref("character_favorites", lazy="select"))
+                                   backref=db.backref("character_favorite", lazy="select"))
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
     def serialize(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
             "character_id": self.character_id,
-            "character_name": self.character_to.name if self.character_to else None}
+            "character_name": self.character_to.name,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")}
 
 
 class Characters(db.Model):
@@ -86,17 +85,19 @@ class PlanetFavorites(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     user_to = db.relationship("Users", foreign_keys=[user_id],
-                              backref=db.backref("user_planet_favorites", lazy="select"))
+                              backref=db.backref("user_planet_favorite", lazy="select"))
     planet_id = db.Column(db.Integer, db.ForeignKey("planets.id"))
     planet_to = db.relationship("Planets", foreign_keys=[planet_id],
-                                 backref=db.backref("planet_favorites", lazy="select"))
+                                 backref=db.backref("planet_favorite", lazy="select"))
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
     def serialize(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
             "planet_id": self.planet_id,
-            "planet_name": self.planet_to.name if self.planet_to else None}
+            "planet_name": self.planet_to.name,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")}
 
 
 class Planets(db.Model):
@@ -132,17 +133,19 @@ class StarshipFavorites(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     user_to = db.relationship("Users", foreign_keys=[user_id],
-                              backref=db.backref("user_starship_favorites", lazy="select"))
+                              backref=db.backref("user_starship_favorite", lazy="select"))
     starship_id = db.Column(db.Integer, db.ForeignKey("starships.id"))
     starship_to = db.relationship("Starships", foreign_keys=[starship_id],
-                                 backref=db.backref("starship_favorites", lazy="select"))
+                                 backref=db.backref("starship_favorite", lazy="select"))
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
     def serialize(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
             "starship_id": self.starship_id,
-            "starship_name": self.starship_to.name if self.starship_to else None}
+            "starship_name": self.starship_to.name,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")}
 
 
 class Starships(db.Model):

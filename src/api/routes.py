@@ -40,9 +40,7 @@ def signup():
     db.session.commit()
 
     claims = {"user_id": user.id,
-              "email": user.email,
-              "first_name": user.first_name if user.first_name else None,
-              "last_name": user.last_name if user.last_name else None}
+              "email": user.email}
 
     access_token = create_access_token(
         identity=user.email, additional_claims=claims)
@@ -72,9 +70,7 @@ def login():
         return jsonify(response_body), 403
 
     claims = {"user_id": user.id,
-              "email": user.email,
-              "first_name": user.first_name if user.first_name else None,
-              "last_name": user.last_name if user.last_name else None}
+              "email": user.email}
 
     access_token = create_access_token(
         identity=email, additional_claims=claims)

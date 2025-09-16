@@ -1,7 +1,7 @@
 import { useState } from "react"
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { useNavigate } from "react-router-dom";
-import { putUser, deleteUser } from "../services/star-wars-services.js";
+import { putUser, deleteUser } from "../services/auth.js";
 
 
 export const Settings = () => {
