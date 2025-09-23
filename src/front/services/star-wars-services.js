@@ -97,7 +97,7 @@ export const postCharacterFavorite = async (characterId) => {
     throw new Error(backError.message || `Error ${response.status}`);
   }
   const characterFavorite = await response.json();
-  const storedCharacterFavorites = JSON.parse(localStorage.getItem("character-favorites")) || [];
+  const storedCharacterFavorites = JSON.parse(localStorage.getItem("character-favorites"));
   const updatedCharacterFavorites = [...storedCharacterFavorites, characterFavorite.results];
   localStorage.setItem("character-favorites", JSON.stringify(updatedCharacterFavorites));
   return characterFavorite.results;
@@ -179,7 +179,7 @@ export const postPlanetFavorite = async (planetId) => {
     throw new Error(backError.message || `Error ${response.status}`);
   }
   const planetFavorite = await response.json();
-  const storedPlanetFavorites = JSON.parse(localStorage.getItem("planet-favorites")) || [];
+  const storedPlanetFavorites = JSON.parse(localStorage.getItem("planet-favorites"));
   const updatedPlanetFavorites = [...storedPlanetFavorites, planetFavorite.results];
   localStorage.setItem("planet-favorites", JSON.stringify(updatedPlanetFavorites));
   return planetFavorite.results;
@@ -261,7 +261,7 @@ export const postStarshipFavorite = async (starshipId) => {
     throw new Error(backError.message || `Error ${response.status}`);
   }
   const starshipFavorite = await response.json();
-  const storedStarshipFavorites = JSON.parse(localStorage.getItem("starship-favorites")) || [];
+  const storedStarshipFavorites = JSON.parse(localStorage.getItem("starship-favorites"));
   const updatedStarshipFavorites = [...storedStarshipFavorites, starshipFavorite.results];
   localStorage.setItem("starship-favorites", JSON.stringify(updatedStarshipFavorites));
   return starshipFavorite.results;

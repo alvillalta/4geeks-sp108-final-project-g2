@@ -26,7 +26,7 @@ export const initialStore = () => {
 
     starships: [],
     starshipDetails: {},
-    starshipFavorites: storedToken && storedStarshipFavorites ? JSON.parse(storedStarshipFavorites) : [],
+    starshipFavorites: storedToken && storedStarshipFavorites ? JSON.parse(storedStarshipFavorites) : []
   };
 };
 

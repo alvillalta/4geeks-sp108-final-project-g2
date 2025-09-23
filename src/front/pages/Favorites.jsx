@@ -1,4 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { deleteCharacterFavorite, deletePlanetFavorite, deleteStarshipFavorite } from "../services/star-wars-services.js";
 import starWarsImageError from "../assets/star-wars-image-error.jpg";
@@ -6,115 +7,145 @@ import starWarsImageError from "../assets/star-wars-image-error.jpg";
 export const Favorites = () => {
     const navigate = useNavigate();
     const { store, dispatch } = useGlobalReducer();
-    const characterFavorites = store.characterFavorites;
-    const planetFavorites = store.planetFavorites;
-    const starshipFavorites = store.starshipFavorites;
+    const [filter, setFilter] = useState("All");
+    // sort() and reverse() methods modify the original array, so it's copied in order to operate without changing the one saved in the store
+    const characterFavorites = [...store.characterFavorites].reverse();
+    const planetFavorites = [...store.planetFavorites].reverse();
+    const starshipFavorites = [...store.starshipFavorites].reverse();
+    const allFavorites = [...store.characterFavorites, ...store.planetFavorites, ...store.starshipFavorites]
+    const allFavoritesSorted = [...allFavorites].sort((favoriteA, favoriteB) => new Date(favoriteB.created_at) - new Date(favoriteA.created_at));
 
-    const handleCharacterFavorites = async (characterId) => {
-            try {
-                if (characterFavorites.find(favorite => favorite.character_id === characterId)) {
-                    const responseStatus = await deleteCharacterFavorite(characterId);
-                    if (responseStatus == 204) {
-                        dispatch({
-                            type: "DELETE-CHARACTER-FAVORITE",
-                            payload: characterId
-                        });
-                    }
-                } 
-            } catch (error) {
-                return alert(error.message);
-            }
-        }
-        
-    const handlePlanetFavorites = async (planetId) => {
-            try {
-                if (planetFavorites.find(favorite => favorite.planet_id === planetId)) {
-                    const responseStatus = await deletePlanetFavorite(planetId);
-                    if (responseStatus == 204) {
-                        dispatch({
-                            type: "DELETE-PLANET-FAVORITE",
-                            payload: planetId
-                        });
-                    }
-                } 
-            } catch (error) {
-                return alert(error.message);
-            }
-        }
+    const handleImageError = (event) => {
+        event.target.src = starWarsImageError;
+    };
 
-    const handleStarshipFavorites = async (starshipId) => {
-            try {
-                if (starshipFavorites.find(favorite => favorite.starship_id === starshipId)) {
-                    const responseStatus = await deleteStarshipFavorite(starshipId);
-                    if (responseStatus == 204) {
-                        dispatch({
-                            type: "DELETE-STARSHIP-FAVORITE",
-                            payload: starshipId
-                        });
-                    }
-                } 
-            } catch (error) {
-                return alert(error.message);
-            }
+    const handleFilters = (event) => {
+        setFilter(event.target.value);
+    };
+
+    const filteredFavorites = (filter) => {
+        if (filter === "All") return allFavoritesSorted;
+        if (filter === "Character") return characterFavorites;
+        if (filter === "Planet") return planetFavorites;
+        if (filter === "Starship") return starshipFavorites;
+    };
+    
+    const getType = (item) => {
+        if (item.character_id) return "character";
+        if (item.planet_id) return "planet";
+        if (item.starship_id) return "starship";
+    };
+
+    const cardConfiguration = {
+        character: {
+            type: "character",
+            id: item => item.character_id,
+            favoriteName: item => item.character_name,
+            image: item => `https://raw.githubusercontent.com/tbone849/star-wars-guide/refs/heads/master/build/assets/img/characters/${item.character_id}.jpg`,
+            icon: <i className="fa-solid fa-user fa-lg"></i>,
+            route: item => handleFavoriteDetails(`/characters/${item.character_id}`),
+            deleteFavorite: item => handleDeleteFavorite(item.character_id, "character")
+        },
+        planet: {
+            type: "planet",
+            id: item => item.planet_id,
+            favoriteName: item => item.planet_name,
+            image: item => `https://raw.githubusercontent.com/tbone849/star-wars-guide/refs/heads/master/build/assets/img/planets/${item.planet_id}.jpg`,
+            icon: <i className="fa-solid fa-sun fa-lg"></i>,
+            route: item => handleFavoriteDetails(`/planets/${item.planet_id}`),
+            deleteFavorite: item => handleDeleteFavorite(item.planet_id, "planet")
+        },
+        starship: {
+            type: "starship",
+            id: item => item.starship_id,
+            favoriteName: item => item.starship_name,
+            image: item => `https://raw.githubusercontent.com/tbone849/star-wars-guide/refs/heads/master/build/assets/img/starships/${item.starship_id}.jpg`,
+            icon: <i className="fa-solid fa-rocket fa-lg"></i>,
+            route: item => handleFavoriteDetails(`/starships/${item.starship_id}`),
+            deleteFavorite: item => handleDeleteFavorite(item.starship_id, "starship")
         }
+    };
+
+    const handleFavoriteDetails = (route) => {
+        navigate(route);
+    }
+
+    const handleDeleteFavorite = async (itemId, type) => {
+        try {
+            if (store[`${type}Favorites`].find(favorite => favorite[`${type}_id`] === itemId)) {
+                const deleteFavorite = { 
+                    character: deleteCharacterFavorite, 
+                    planet: deletePlanetFavorite, 
+                    starship: deleteStarshipFavorite 
+                };
+                const deleteFunction = deleteFavorite[type]
+                const responseStatus = await deleteFunction(itemId);
+                if (responseStatus === 204) {
+                    dispatch({
+                        type: `DELETE-${type.toUpperCase()}-FAVORITE`,
+                        payload: itemId
+                    });
+                };
+            };
+        } catch (error) {
+            alert(error.message);
+        }
+    };
     
     return (
-        <div className="my-4">
-            <div className="container">
-                <div className="row justify-content-center mb-3"> 
-                    <div className="col-md-4 d-flex flex-column justify-content-center align-items-center p-3">
-                        <h3 className="mb-3">Character Favorites</h3>
-                        <ul className="list-group w-100">
-                            {characterFavorites.map(item => {
-                                return (
-                                    <li className="list-group-item d-flex justify-content-between align-items-center" key={item.id}>
-                                        <Link to={`/characters/${item.character_id}`} className="my-0 text-decoration-none text-dark">
-                                            {item.character_name}
-                                        </Link>
-                                        <button onClick={() => handleCharacterFavorites(item.character_id)} type="button" className="border-0 bg-transparent text-dark">
-                                            <i className="fa-solid fa-xmark"></i>
-                                        </button>
-                                    </li>
-                                )
-                            })}
-                        </ul>
-                    </div>
-                    <div className="col-md-4 d-flex flex-column justify-content-center align-items-center p-3">
-                        <h3 className="mb-3">Planet Favorites</h3>
-                        <ul className="list-group w-100">
-                            {planetFavorites.map(item => {
-                                return (
-                                    <li className="list-group-item d-flex justify-content-between align-items-center" key={item.id}>
-                                        <Link to={`/planets/${item.planet_id}`} className="my-0 text-decoration-none text-dark">
-                                            {item.planet_name}
-                                        </Link>
-                                        <button onClick={() => handlePlanetFavorites(item.planet_id)} type="button" className="border-0 bg-transparent text-dark">
-                                            <i className="fa-solid fa-xmark"></i>
-                                        </button>
-                                    </li>
-                                )
-                            })}
-                        </ul>
-                    </div>
-                    <div className="col-md-4 d-flex flex-column justify-content-center align-items-center p-3">
-                        <h3 className="mb-3">Starship Favorites</h3>
-                        <ul className="list-group w-100">
-                            {starshipFavorites.map(item => {
-                                return (
-                                    <li className="list-group-item d-flex justify-content-between align-items-center" key={item.id}>
-                                        <Link to={`/starships/${item.starship_id}`} className="my-0 text-decoration-none text-dark">
-                                            {item.starship_name}
-                                        </Link>
-                                        <button onClick={() => handleStarshipFavorites(item.starship_id)} type="button" className="border-0 bg-transparent text-dark">
-                                            <i className="fa-solid fa-xmark"></i>
-                                        </button>
-                                    </li>
-                                )
-                            })}
-                        </ul>
-                    </div>
+        <div className="container text-center my-4">
+            <div className="d-flex justify-content-start align-items-center gap-3 mb-4">
+                <div className="btn-group" role="group">
+                    <input type="radio" className="btn-check" name="btnradio" id="btnAllFavorites" autocomplete="off" 
+                        onChange={handleFilters} value="All" checked={filter === "All"}/>
+                    <label className="btn btn-outline-dark" htmlFor="btnAllFavorites"><i className="fa-solid fa-border-all fa-lg"></i></label>
+                    <input type="radio" className="btn-check" name="btnradio" id="btnCharacters" autocomplete="off"
+                        onChange={handleFilters} value="Character" checked={filter === "Character"}/>
+                    <label className="btn btn-outline-dark" htmlFor="btnCharacters"><i className="fa-solid fa-user fa-lg"></i></label>
+                    <input type="radio" className="btn-check" name="btnradio" id="btnPlanets" autocomplete="off" 
+                        onChange={handleFilters} value="Planet" checked={filter === "Planet"}/>
+                    <label className="btn btn-outline-dark" htmlFor="btnPlanets"><i className="fa-solid fa-sun fa-lg"></i></label>
+                    <input type="radio" className="btn-check" name="btnradio" id="btnStarships" autocomplete="off" 
+                        onChange={handleFilters} value="Starship" checked={filter === "Starship"}/>
+                    <label className="btn btn-outline-dark" htmlFor="btnStarships"><i className="fa-solid fa-rocket fa-lg"></i></label>
                 </div>
+                <h3 className="mb-0">{filter} Favorites</h3>
             </div>
-        </div>
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-2">
+                {filteredFavorites(filter).map((item) => {
+                    const type = (filter === "All") ? getType(item) : filter.toLowerCase();
+                    const card = cardConfiguration[type];
+                    return (
+                        <div className="col" key={card.type + "-" + card.id(item)}>
+                            <div className="card mb-3">
+                                <img src={card.image(item)} onError={handleImageError} className="css-card-image card-img-top"/>
+                                <div className="d-flex align-items-start">
+                                    <div className="card-body text-start">
+                                        <h5 className="card-title">{card.favoriteName(item)}</h5>
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <div className="d-flex align-items-center gap-3">
+                                            <button onClick={() => card.route(item)} className="btn btn-dark">
+                                                Details
+                                            </button>
+                                                {filter === "All" ? 
+                                                    <span className="text-body-tertiary">
+                                                        {card.icon}
+                                                    </span>
+                                                    : 
+                                                    <span className="d-none"></span>
+                                                }
+                                            </div>
+                                            <button onClick={() => card.deleteFavorite(item)} type="button" className="border-0 bg-transparent text-dark">
+                                                <i className="fa-solid fa-xmark fa-xl"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+        </div >
     )
 }

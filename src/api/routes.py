@@ -6,7 +6,7 @@ from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from api.models import db, Users, CharacterFavorites, Characters, PlanetFavorites, Planets, StarshipFavorites, Starships
 import requests
-from sqlalchemy import asc
+from sqlalchemy import asc, desc
 from sqlalchemy import and_
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
@@ -131,9 +131,9 @@ def handle_favorites(user_id):
         response_body["results"] = None
         return jsonify(response_body), 404
     if request.method == "GET":
-        character_favorites = db.session.execute(db.select(CharacterFavorites).where(CharacterFavorites.user_id == user_id)).scalars().all()
-        planet_favorites = db.session.execute(db.select(PlanetFavorites).where(PlanetFavorites.user_id == user_id)).scalars().all()
-        starship_favorites = db.session.execute(db.select(StarshipFavorites).where(StarshipFavorites.user_id == user_id)).scalars().all()
+        character_favorites = db.session.execute(db.select(CharacterFavorites).where(CharacterFavorites.user_id == user_id).order_by(asc(CharacterFavorites.created_at))).scalars().all()
+        planet_favorites = db.session.execute(db.select(PlanetFavorites).where(PlanetFavorites.user_id == user_id).order_by(asc(PlanetFavorites.created_at))).scalars().all()
+        starship_favorites = db.session.execute(db.select(StarshipFavorites).where(StarshipFavorites.user_id == user_id).order_by(asc(StarshipFavorites.created_at))).scalars().all()
         if not character_favorites and not planet_favorites and not starship_favorites:
             response_body["message"] = f"User {user_id} has no favorites"
             response_body["character_favorites"] = []
