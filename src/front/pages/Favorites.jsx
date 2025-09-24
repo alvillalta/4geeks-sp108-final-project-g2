@@ -68,7 +68,7 @@ export const Favorites = () => {
 
     const handleFavoriteDetails = (route) => {
         navigate(route);
-    }
+    };
 
     const handleDeleteFavorite = async (itemId, type) => {
         try {
@@ -88,7 +88,10 @@ export const Favorites = () => {
                 };
             };
         } catch (error) {
-            alert(error.message);
+            dispatch({
+                type: "SET-NOTIFICATION",
+                payload: error.message 
+            });
         }
     };
     
@@ -98,16 +101,24 @@ export const Favorites = () => {
                 <div className="btn-group" role="group">
                     <input type="radio" className="btn-check" name="btnradio" id="btnAllFavorites" autocomplete="off" 
                         onChange={handleFilters} value="All" checked={filter === "All"}/>
-                    <label className="btn btn-outline-dark" htmlFor="btnAllFavorites"><i className="fa-solid fa-border-all fa-lg"></i></label>
+                    <label className="btn btn-outline-dark" htmlFor="btnAllFavorites">
+                        <i className="fa-solid fa-border-all fa-lg"></i>
+                    </label>
                     <input type="radio" className="btn-check" name="btnradio" id="btnCharacters" autocomplete="off"
                         onChange={handleFilters} value="Character" checked={filter === "Character"}/>
-                    <label className="btn btn-outline-dark" htmlFor="btnCharacters"><i className="fa-solid fa-user fa-lg"></i></label>
+                    <label className="btn btn-outline-dark" htmlFor="btnCharacters">
+                        <i className="fa-solid fa-user fa-lg"></i>
+                    </label>
                     <input type="radio" className="btn-check" name="btnradio" id="btnPlanets" autocomplete="off" 
                         onChange={handleFilters} value="Planet" checked={filter === "Planet"}/>
-                    <label className="btn btn-outline-dark" htmlFor="btnPlanets"><i className="fa-solid fa-sun fa-lg"></i></label>
+                    <label className="btn btn-outline-dark" htmlFor="btnPlanets">
+                        <i className="fa-solid fa-sun fa-lg"></i>
+                    </label>
                     <input type="radio" className="btn-check" name="btnradio" id="btnStarships" autocomplete="off" 
                         onChange={handleFilters} value="Starship" checked={filter === "Starship"}/>
-                    <label className="btn btn-outline-dark" htmlFor="btnStarships"><i className="fa-solid fa-rocket fa-lg"></i></label>
+                    <label className="btn btn-outline-dark" htmlFor="btnStarships">
+                        <i className="fa-solid fa-rocket fa-lg"></i>
+                    </label>
                 </div>
                 <h3 className="mb-0">{filter} Favorites</h3>
             </div>
@@ -128,7 +139,7 @@ export const Favorites = () => {
                                                 Details
                                             </button>
                                                 {filter === "All" ? 
-                                                    <span className="text-body-tertiary">
+                                                    <span className="text-secondary">
                                                         {card.icon}
                                                     </span>
                                                     : 

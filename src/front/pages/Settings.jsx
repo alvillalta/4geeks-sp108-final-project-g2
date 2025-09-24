@@ -31,7 +31,10 @@ export const Settings = () => {
         } catch (error) {
             setFirstName(currentUser.first_name);
             setLastName(currentUser.last_name);
-            return alert(error.message);
+            dispatch({
+                type: "SET-NOTIFICATION",
+                payload: error.message 
+            });
         }
     }
 
@@ -46,7 +49,10 @@ export const Settings = () => {
         } catch (error) {
             setFirstName(currentUser.first_name);
             setLastName(currentUser.last_name);
-            return alert(error.message);
+            dispatch({
+                type: "SET-NOTIFICATION",
+                payload: error.message 
+            });
         }
     }
 

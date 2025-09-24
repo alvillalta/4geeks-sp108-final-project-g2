@@ -48,7 +48,10 @@ export const Login = () => {
         } catch (error) {
             setEmail("");
             setPassword("");
-            return alert(error.message);
+            dispatch({
+                type: "SET-NOTIFICATION",
+                payload: error.message 
+            });
         }
     }
 

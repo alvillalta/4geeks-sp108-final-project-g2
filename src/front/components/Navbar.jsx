@@ -32,6 +32,11 @@ export const Navbar = () => {
 	const handleFavorites = () => {
 		if (favoritesLength > 0) {
 			navigate("/favorites");
+		} else {
+			dispatch({
+                type: "SET-NOTIFICATION",
+                payload: "There are no favorites yet" 
+            });
 		}
 	}
 
@@ -62,7 +67,7 @@ export const Navbar = () => {
 							<span className="navbar-brand mb-0 me-0 me-lg-3 h1">Contacts</span>
 						</Link>
 						<button onClick={handleFavorites} type="button" 
-							className={`btn btn-${favoritesLength > 0 ? "dark" : "secondary"} position-relative`}>
+							className={`${store.login.isLogged ? `btn-${favoritesLength > 0 ? "dark" : "secondary"}` : "d-none"} btn position-relative`}>
 							{favoritesLength > 0 ?
 								<span>
 									Favorites
@@ -80,7 +85,7 @@ export const Navbar = () => {
 				</div>
 				<div className="col-12 col-lg-4">
 					<div className="d-flex flex-column flex-lg-row justify-content-center justify-content-lg-end align-items-center">
-						<button onClick={handleLogIn} type="button" className="btn btn-light text-dark border-dark mx-3 mb-3 mb-lg-0">{store.login.isLogged ? "Log Out" : "Log In"}</button>
+						<button onClick={handleLogIn} type="button" className="btn btn-light text-dark-subtle border-dark mx-3 mb-3 mb-lg-0">{store.login.isLogged ? "Log Out" : "Log In"}</button>
 						<button onClick={handleSignUp} type="button" className="btn btn-dark">{store.login.isLogged ? "Settings" : "Sign Up"}</button>
 					</div>
 				</div>

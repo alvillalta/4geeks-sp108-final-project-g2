@@ -12,6 +12,7 @@ export const initialStore = () => {
       isLogged: storedToken ? true : false
     },
     currentUser: storedToken && storedUser ? JSON.parse(storedUser) : {},
+    notificationMessage: "",
 
     contacts: [],
     contactToEdit: {},
@@ -42,6 +43,12 @@ export default function storeReducer(store, action = {}) {
 
     case "CURRENT-USER":
       return { ...store, currentUser: action.payload };
+
+    case "SET-NOTIFICATION":
+      return { ...store, notificationMessage: action.payload };
+
+    case "CLEAR-NOTIFICATION":
+      return { ...store, notificationMessage: "" };
       
     case "GET-AGENDA":
       return { ...store, contacts: action.payload };

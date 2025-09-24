@@ -8,3 +8,8 @@
     object-fit: cover;
     width: 100%;
 }
+
+.css-notification {
+    z-index: 2000;
+    margin-top: 2rem;
+}

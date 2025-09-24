@@ -42,7 +42,10 @@ export const SignUp = () => {
             setPassword("");
             setFirstName("");
             setLastName("");
-            return alert(error.message);
+            dispatch({
+                type: "SET-NOTIFICATION",
+                payload: error.message 
+            });
         }
     };
 

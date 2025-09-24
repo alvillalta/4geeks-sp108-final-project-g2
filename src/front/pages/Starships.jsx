@@ -47,7 +47,10 @@ export const Starships = () => {
                 }
             } 
         } catch (error) {
-            return alert(error.message);
+            dispatch({
+                type: "SET-NOTIFICATION",
+                payload: error.message 
+            });
         }
     }
 
