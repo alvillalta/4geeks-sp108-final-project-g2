@@ -22,7 +22,7 @@ export const getAgenda = async () => {
   try {
     const response = await fetch(uri, options);
     if (response.status === 404) {
-      return postUser();
+      postUser();
     } else if (!response.ok) {
       console.log(response.status, " error");
     }
