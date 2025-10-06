@@ -11,7 +11,7 @@ export const Notification = () => {
                 dispatch({
                     type: "CLEAR-NOTIFICATION"
                 });
-            }, 3000);
+            }, 5000);
             return () => clearTimeout(timer);
         }
     }, [notification]);

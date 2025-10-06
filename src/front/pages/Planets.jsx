@@ -39,7 +39,7 @@ export const Planets = () => {
                 });
             } else {
                 const responseStatus = await deletePlanetFavorite(itemId);
-                if (responseStatus == 204) {
+                if (responseStatus == 200) {
                     dispatch({
                         type: "DELETE-PLANET-FAVORITE",
                         payload: itemId

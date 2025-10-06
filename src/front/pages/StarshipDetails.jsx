@@ -51,7 +51,7 @@ export const StarshipDetails = () => {
                 });
             } else {
                 const responseStatus = await deleteStarshipFavorite(starshipIdInt);
-                if (responseStatus == 204) {
+                if (responseStatus == 200) {
                     dispatch({
                         type: "DELETE-STARSHIP-FAVORITE",
                         payload: starshipIdInt

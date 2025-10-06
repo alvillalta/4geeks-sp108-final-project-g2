@@ -80,7 +80,7 @@ export const Favorites = () => {
                 };
                 const deleteFunction = deleteFavorite[type]
                 const responseStatus = await deleteFunction(itemId);
-                if (responseStatus === 204) {
+                if (responseStatus === 200) {
                     dispatch({
                         type: `DELETE-${type.toUpperCase()}-FAVORITE`,
                         payload: itemId

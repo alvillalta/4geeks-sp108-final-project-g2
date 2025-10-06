@@ -27,9 +27,10 @@ smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 smtp_port = int(os.getenv("SMTP_PORT", 465))
 
 
-api = Blueprint("api", __name__)
-CORS(api)  # Allow CORS requests to this API
 
+api = Blueprint("api", __name__)
+""" CORS(api)  # Allow CORS requests to this API """
+CORS(api, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
 def validate_email(email):
         if not len(email) <= 100:
@@ -79,7 +80,7 @@ def send_mail(to_email, subject, body):
         mail_sent["message"] = f"Error sending mail: {error}"
         mail_sent["results"] = False
         return mail_sent
-    
+        
 
 @api.route("/signup", methods=["POST"])
 def signup():
@@ -159,7 +160,7 @@ def login():
         response_body["results"] = None
         return jsonify(response_body), 401
     claims = {"user_id": user.id, "email": user.email}
-    access_token = create_access_token(identity=user.id, additional_claims=claims, expires_delta=timedelta(minutes=60))
+    access_token = create_access_token(identity=f"{user.id}", additional_claims=claims, expires_delta=timedelta(minutes=60))
     response_body["message"] = f"User {user.email} logged successfully"
     response_body["results"] = user.serialize_basic()
     response_body["access_token"] = access_token
@@ -187,7 +188,7 @@ def recover_password():
         response_body["message"] = f"Invalid email"
         response_body["results"] = None
         return jsonify(response_body), 401
-    reset_token = create_access_token(identity=user.id, expires_delta=timedelta(minutes=30))
+    reset_token = create_access_token(identity=f"{user.id}", expires_delta=timedelta(minutes=30))
     reset_token_expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     user.reset_token = reset_token
     user.reset_token_expires_at = reset_token_expires_at
@@ -204,15 +205,22 @@ def recover_password():
         return jsonify(response_body), 400
     response_body["message"] = f"If the email exists, check your inbox"
     response_body["results"] = None
-    return jsonify(response_body), 204
+    return jsonify(response_body), 200
 
 
 @api.route("/reset-password", methods=["POST"])
 def reset_password():
     response_body = {}
+    print("raw_data", request.data)
     data = request.json
+    print("Parsed data:", data)
     reset_token = data.get("token")
-    decoded_token = decode_token(reset_token)
+    try:
+        decoded_token = decode_token(reset_token)
+        print("Decoded token:", decoded_token)
+    except Exception as e:
+        print("Token decode error:", e)
+        return jsonify({"message": f"Invalid or expired token: {str(e)}", "results": None}), 400
     user_id = decoded_token["sub"]
     if not user_id:
         response_body["message"] = f"Invalid credentials"
@@ -233,17 +241,19 @@ def reset_password():
         response_body["message"] = password_validation_error
         response_body["results"] = None
         return jsonify(response_body), 400
-    user = db.session_execute(db.select(Users).where(and_(Users.id == user_id,
+    user = db.session.execute(db.select(Users).where(and_(Users.id == user_id,
                                                           Users.is_active == True))).scalar()
     if not user:
         response_body["message"] = f"User to recover not found"
         response_body["results"] = None
         return jsonify(response_body), 404
+    print("Token matches:", user.reset_token == reset_token)
     if user.reset_token != reset_token:
         response_body["message"] = "Invalid reset token"
         response_body["results"] = None
         return jsonify(response_body), 400
-    if user.reset_token_expires_at <= datetime.now(timezone.utc):
+    print("Token expires at:", user.reset_token_expires_at, "Now:", datetime.now(timezone.utc))
+    if user.reset_token_expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
         response_body["message"] = f"Time out for resetting the password"
         response_body["results"] = None
         return jsonify(response_body), 400
@@ -253,7 +263,7 @@ def reset_password():
     db.session.commit()
     response_body["message"] = f"Password reset successfully"
     response_body["results"] = None
-    return jsonify(response_body), 204
+    return jsonify(response_body), 200
 
 
 @api.route("/users/<int:user_id>", methods=["GET", "PUT", "DELETE"])
@@ -294,7 +304,7 @@ def handle_user(user_id):
         db.session.commit()
         response_body["message"] = f"User {user_to_handle.id} deleted successfully"
         response_body["results"] = None
-        return jsonify(response_body), 204
+        return jsonify(response_body), 200
 
 
 @api.route("/users/<int:user_id>/favorites", methods=["GET"])
@@ -307,9 +317,10 @@ def handle_favorites(user_id):
         response_body["results"] = None
         return jsonify(response_body), 404
     if request.method == "GET":
-        character_favorites = db.session.execute(db.select(CharacterFavorites).where(CharacterFavorites.user_id == user_id).order_by(asc(CharacterFavorites.created_at))).scalars().all()
-        planet_favorites = db.session.execute(db.select(PlanetFavorites).where(PlanetFavorites.user_id == user_id).order_by(asc(PlanetFavorites.created_at))).scalars().all()
-        starship_favorites = db.session.execute(db.select(StarshipFavorites).where(StarshipFavorites.user_id == user_id).order_by(asc(StarshipFavorites.created_at))).scalars().all()
+        print("Antes de llamar a los favoritos de db")
+        character_favorites = db.session.execute(db.select(CharacterFavorites).where(CharacterFavorites.user_id == user_id).order_by(asc(CharacterFavorites.created_at))).scalars()
+        planet_favorites = db.session.execute(db.select(PlanetFavorites).where(PlanetFavorites.user_id == user_id).order_by(asc(PlanetFavorites.created_at))).scalars()
+        starship_favorites = db.session.execute(db.select(StarshipFavorites).where(StarshipFavorites.user_id == user_id).order_by(asc(StarshipFavorites.created_at))).scalars()
         if not character_favorites and not planet_favorites and not starship_favorites:
             response_body["message"] = f"User {user_id} has no favorites"
             response_body["character_favorites"] = []
@@ -433,7 +444,7 @@ def handle_favorite_characters(character_id):
         db.session.commit()
         response_body["message"] = f"User {token_user_id} deleted successfully character {character_id} from favorites"
         response_body["results"] = None
-        return jsonify(response_body), 204
+        return jsonify(response_body), 200
     
 
 @api.route("/planets")
@@ -543,7 +554,7 @@ def handle_favorite_planets(planet_id):
         db.session.commit()
         response_body["message"] = f"User {token_user_id} deleted successfully planet {planet_id} from favorites"
         response_body["results"] = None
-        return jsonify(response_body), 204
+        return jsonify(response_body), 200
     
 
 @api.route("/starships")
@@ -656,4 +667,4 @@ def handle_favorite_starships(starship_id):
         db.session.commit()
         response_body["message"] = f"User {token_user_id} deleted successfully starship {starship_id} from favorites"
         response_body["results"] = None
-        return jsonify(response_body), 204
+        return jsonify(response_body), 200

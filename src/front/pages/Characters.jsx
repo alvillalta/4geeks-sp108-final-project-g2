@@ -40,7 +40,7 @@ export const Characters = () => {
                 });
             } else {
                 const responseStatus = await deleteCharacterFavorite(itemId);
-                if (responseStatus == 204) {
+                if (responseStatus == 200) {
                     dispatch({
                         type: "DELETE-CHARACTER-FAVORITE",
                         payload: itemId

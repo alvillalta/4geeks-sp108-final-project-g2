@@ -3,10 +3,10 @@ const host = import.meta.env.VITE_BACKEND_URL;
 
 export const getFavorites = async (userId) => {
   const uri = `${host}/api/users/${userId}/favorites`;
+  console.log("Aquí sí que entra");
   const options = { 
     method: "GET",
     headers: {
-      "Content-type": "application/json",
       "Authorization": `Bearer ${localStorage.getItem("token")}`
     }
   };
@@ -19,6 +19,7 @@ export const getFavorites = async (userId) => {
   const planetFavoritesStorage = localStorage.getItem(`planet-favorites`);
   const starshipFavoritesStorage = localStorage.getItem(`starship-favorites`);
   if (!characterFavoritesStorage && !planetFavoritesStorage && !starshipFavoritesStorage) {
+    console.log("Token enviado:", localStorage.getItem("token"));
     const response = await fetch(uri, options);
     if (!response.ok) {
       const backError = await response.json();

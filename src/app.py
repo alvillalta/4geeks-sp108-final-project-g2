@@ -17,6 +17,8 @@ ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../dist/')
 app = Flask(__name__)
 app.url_map.strict_slashes = False
+
+
 # Database configuration
 db_url = os.getenv("DATABASE_URL")
 if db_url is not None:
@@ -30,6 +32,8 @@ setup_admin(app)  # Add the admin
 setup_commands(app)  # Add the admin
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
+
+
 # Setup the Flask-JWT-Extended extension
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 jwt = JWTManager(app)

@@ -32,7 +32,9 @@ export const Login = () => {
                 type: "CURRENT-USER",
                 payload: userLogged.results
             });
+            console.log("Antes de favorites");
             const favorites = await getFavorites(userLogged.results.id);
+            console.log("Después de favorites de favorites");
             dispatch({
                 type: "CHARACTER-FAVORITES",
                 payload: favorites.characterFavorites
@@ -97,9 +99,9 @@ export const Login = () => {
                                     value={password} onChange={handlePassword} required/>
                                 <button type="button" onClick={() => handlePasswordVisibility(showPassword)} className="input-group-text text-dark bg-tertiary">
                                     {showPassword ? 
-                                        <i class="fa-solid fa-eye-slash"></i>
+                                        <i className="fa-solid fa-eye-slash"></i>
                                         :
-                                        <i class="fa-solid fa-eye"></i>
+                                        <i className="fa-solid fa-eye"></i>
                                     }
                                 </button>
                             </div>

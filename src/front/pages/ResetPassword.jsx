@@ -1,12 +1,14 @@
 import { useState } from "react"
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { useNavigate } from "react-router-dom";
-/* import { resetPassword } from "../services/auth.js";
- */
+import { resetPassword } from "../services/auth.js";
+
 
 export const ResetPassword = () => {
     const navigate = useNavigate();
     const { dispatch } = useGlobalReducer();
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
 
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -18,12 +20,13 @@ export const ResetPassword = () => {
     const handleSubmitResetPassword = async (event) => {
         event.preventDefault();
         const passwordToReset = {
+            "token": token,
             "new_password": newPassword,
             "confirm_password": confirmPassword
         }
         try {
             const responseStatus = await resetPassword(passwordToReset);
-            if (responseStatus === 204) {
+            if (responseStatus === 200) {
                 navigate("/login");
             }
         } catch (error) {
@@ -59,9 +62,9 @@ export const ResetPassword = () => {
                                     value={newPassword} onChange={handleNewPassword} required/>
                                 <button type="button" onClick={() => handlePasswordVisibility(showPassword)} className="input-group-text text-dark bg-tertiary">
                                     {showPassword ? 
-                                        <i class="fa-solid fa-eye-slash"></i>
+                                        <i className="fa-solid fa-eye-slash"></i>
                                         :
-                                        <i class="fa-solid fa-eye"></i>
+                                        <i className="fa-solid fa-eye"></i>
                                     }
                                 </button>
                             </div>

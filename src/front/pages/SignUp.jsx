@@ -93,9 +93,9 @@ export const SignUp = () => {
                                     value={password} onChange={handlePassword} required/>
                                 <button type="button" onClick={() => handlePasswordVisibility(showPassword)} className="input-group-text text-dark bg-tertiary">
                                     {showPassword ? 
-                                        <i class="fa-solid fa-eye-slash"></i>
+                                        <i className="fa-solid fa-eye-slash"></i>
                                         :
-                                        <i class="fa-solid fa-eye"></i>
+                                        <i className="fa-solid fa-eye"></i>
                                     }
                                 </button>
                             </div>

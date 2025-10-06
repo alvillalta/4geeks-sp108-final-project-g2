@@ -133,5 +133,25 @@ export const recoverPassword = async (userToRecover) => {
     const backError = await response.json();
     throw new Error(backError.message || `Error ${response.status}`);
   }
+  const recoverPasswordOk = await response.json();
+  const results = {
+    responseOk: response.status,
+    message: recoverPasswordOk.message
+  }
+  return results;
+};
+
+export const resetPassword = async (passwordToReset) => {
+  const uri = `${host}/api/reset-password`;
+  const options = {
+    method: "POST",
+    headers: { "Content-type": "application/json" },
+    body: JSON.stringify(passwordToReset),
+  };
+  const response = await fetch(uri, options);
+  if (!response.ok) {
+    const backError = await response.json();
+    throw new Error(backError.message || `Error ${response.status}`);
+  }
   return response.status;
 };

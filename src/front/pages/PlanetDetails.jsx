@@ -51,7 +51,7 @@ export const PlanetDetails = () => {
                 });
             } else {
                 const responseStatus = await deleteCharacterFavorite(planetIdInt);
-                if (responseStatus == 204) {
+                if (responseStatus == 200) {
                     dispatch({
                         type: "DELETE-PLANET-FAVORITE",
                         payload: planetIdInt

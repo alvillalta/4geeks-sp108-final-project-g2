@@ -42,7 +42,7 @@ export const Settings = () => {
         event.preventDefault();
         try {
             const responseStatus = await deleteUser(currentUser.id);
-            if (responseStatus === 204) {
+            if (responseStatus === 200) {
                 dispatch({ type: "CLEAR-STORE" });
                 navigate("/");
             }

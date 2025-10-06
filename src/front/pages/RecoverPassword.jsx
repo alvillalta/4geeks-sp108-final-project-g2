@@ -18,11 +18,11 @@ export const RecoverPassword = () => {
             "recovery_email": recoveryEmail,
         }
         try {
-            const responseStatus = await recoverPassword(userToRecover);
-            if (responseStatus === 204) {
+            const results = await recoverPassword(userToRecover);
+            if (results.responseOk === 200) {
                 dispatch({
                     type: "SET-NOTIFICATION",
-                    payload: "Check your email inbox"
+                    payload: results.message
                 });
                 navigate("/");
             }
