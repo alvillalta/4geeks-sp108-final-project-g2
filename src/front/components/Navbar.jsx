@@ -84,9 +84,6 @@ export const Navbar = () => {
 							<Link to="/starships" onClick={showToggler} className="nav-link text-decoration-none">
 								<span className="h5">Starships</span>
 							</Link>
-							<Link to="/contacts" onClick={showToggler} className="d-none nav-link text-decoration-none">
-								<span className="h5">Contacts</span>
-							</Link>
 							<button type="button" onClick={() => { handleFavorites(); showToggler(); }}
 							className={`${isLogged ? `btn-${favoritesLength > 0 ? "dark" : "secondary"}` : "d-none"} btn position-relative`}>
 								{favoritesLength > 0 ?
