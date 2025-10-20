@@ -12,9 +12,6 @@ import { RecoverPassword } from "./pages/RecoverPassword.jsx";
 import { ResetPassword } from "./pages/ResetPassword.jsx";
 import { Settings } from "./pages/Settings.jsx";
 import { Favorites } from "./pages/Favorites.jsx";
-import { ContactList } from "./pages/ContactList.jsx";
-import { AddContact } from "./pages/AddContact.jsx";
-import { EditContact } from "./pages/EditContact.jsx";
 import { Characters } from "./pages/Characters.jsx";
 import { CharacterDetails } from "./pages/CharacterDetails.jsx";
 import { Planets } from "./pages/Planets.jsx";
@@ -43,9 +40,6 @@ export const router = createBrowserRouter(
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/favorites" element={<Favorites />} />
-      <Route path="/contacts" element={<ContactList />} />
-      <Route path="/contacts/add-contact" element={<AddContact />} />
-      <Route path="/contacts/edit-contact" element={<EditContact />} />
       <Route path="/characters" element={<Characters />} />
       <Route path="/characters/:characterId" element={<CharacterDetails />} />
       <Route path="/planets" element={<Planets />} />
