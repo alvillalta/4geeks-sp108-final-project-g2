@@ -1,0 +1,271 @@
+import React, { useState, useEffect } from "react"
+import { useParams } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import { useNavigate } from "react-router-dom";
+import { getActivities, postActivity, deleteActivity, putActivity } from "../services/hello-world-services.js"
+import { Map } from "../components/Map.jsx"; // Ajusta si hace falta
+
+
+export const Activities = () => {
+
+  const { trip_id } = useParams();
+  const tripId = parseInt(trip_id)
+  const navigate = useNavigate();
+  const { store, dispatch } = useGlobalReducer();
+
+  const userId = store.currentUser.id
+
+  const trip = store.trips.tripsOwner.find(trip => trip.id === tripId) || store.trips.userTrips.find(trip => trip.id === tripId) || {};
+  const userIsOwner = trip && trip.trip_owner_id === userId;
+
+  const activities = store.activities.filter(activities => activities.trip_id === tripId) || [];
+
+  useEffect(() => {
+    const getAllActivities = async () => {
+      const allActivities = await getActivities(tripId);
+      console.log("activities del useEffect", allActivities);
+      dispatch({
+        type: "GET-ACTIVITIES",
+        payload: Array.isArray(allActivities) ? allActivities : []
+      });
+    };
+    getAllActivities();
+  }, [tripId]);
+
+  const [activityTitle, setActivityTitle] = useState("");
+  const [activityDate, setActivityDate] = useState("");
+  const [activityTime, setActivityTime] = useState("");
+  const [activityAddress, setActivityAdress] = useState("");
+  const [activityNotes, setActivityNotes] = useState("");
+
+  const handleActivityTitle = event => setActivityTitle(event.target.value);
+  const handleActivityDate = event => setActivityDate(event.target.value);
+  const handleActivityTime = event => setActivityTime(event.target.value);
+  const handleActivityAddress = event => setActivityAdress(event.target.value);
+  const handleActivityNotes = event => setActivityNotes(event.target.value);
+
+  const handleSubmitActivity = async (event) => {
+    event.preventDefault();
+    const activityToPost = {
+      "title": activityTitle,
+      "date": activityDate,
+      "time": activityTime,
+      "address": activityAddress,
+      "notes": activityNotes
+    }
+    const activityPosted = await postActivity(tripId, activityToPost);
+    if (activityPosted) {
+      dispatch({
+        type: "POST-ACTIVITY",
+        payload: activityPosted
+      });
+      setActivityTitle("")
+      setActivityDate("");
+      setActivityTime("");
+      setActivityAdress("");
+      setActivityNotes("");
+    } else {
+      return alert("Credenciales inválidas")
+    }
+  };
+
+  /* const handleActivityDetails = (activity) => {
+    navigate(`/trips/${tripId}/activities/${activity.id}/stories`);
+  } */
+
+  const handleEditActivity = (event, activity) => {
+    event.stopPropagation();
+    navigate(`/trips/${tripId}/activities/${activity.id}`);
+  }
+
+  const handleActivityDetails = (event, activity) => {
+    event.stopPropagation();
+    navigate(`/trips/${tripId}/activities/${activity.id}`);
+  }
+
+  const handleDeleteActivity = async (event, activity) => {
+    event.stopPropagation();
+    const activitySelected = store.activities.find(act => act.id === activity.id);
+    if (activitySelected) {
+      const activityDeleted = await deleteActivity(tripId, activitySelected);
+      dispatch({
+        type: "DELETE-ACTIVITY",
+        payload: activityDeleted
+      });
+    } else {
+      return alert("Credenciales inválidas");
+    }
+  }
+
+  const handleReturnToTrips = () => {
+    navigate(`/trips`);
+  }
+
+  const handleEditTrip = () => {
+    navigate(`/trips/${tripId}`)
+  }
+
+  return (
+    <div className="container py-5">
+      {/* Título */}
+      <div className="text-center mb-4">
+        <h2 className="mb-1">
+          <i className="fas fa-list-check me-3 text-warning"></i>
+          Actividades del viaje a {trip.title}
+        </h2>
+        <small className="text-muted d-block mb-3">
+          Del {trip.start_date} al {trip.end_date}
+        </small>
+        <div className="d-flex justify-content-center mt-3 pb-4 text-center gap-3">
+          <button onClick={handleEditTrip} type="button" className="btn-login" style={{ marginRight: 0 }}>
+            <i class="fa-solid fa-pen me-2"></i>
+            Editar viaje
+          </button>
+          <button onClick={handleReturnToTrips} type="button" className="btn-login" style={{ marginLeft: 0 }}>
+            <i className="fas fa-arrow-left me-2"></i>
+            Volver a mis viajes
+          </button>
+        </div>
+      </div>
+
+      {/* Formulario + Lista + Mapa */}
+      {userIsOwner ? (
+        <div className="row">
+          {/* Columna izquierda: Form + Lista */}
+          <div className="col-md-6 mb-4">
+            <form onSubmit={handleSubmitActivity}>
+              <div className="mb-2 input-group">
+                <span className="input-group-text"><i className="fas fa-tag"></i></span>
+                <input
+                  type="text"
+                  value={activityTitle}
+                  onChange={handleActivityTitle}
+                  className="form-control"
+                  placeholder="Nombre de la actividad"
+                />
+              </div>
+
+              <div className="mb-2 input-group">
+                <span className="input-group-text"><i className="fas fa-align-left"></i></span>
+                <input
+                  type="text"
+                  value={activityNotes}
+                  onChange={handleActivityNotes}
+                  className="form-control"
+                  placeholder="Descripción (opcional)"
+                />
+              </div>
+
+              <div className="mb-2 d-flex gap-2">
+                <div className="input-group flex-fill">
+                  <span className="input-group-text"><i className="fas fa-calendar-alt"></i></span>
+                  <input
+                    type="date"
+                    value={activityDate || ""}
+                    onChange={handleActivityDate}
+                    className="form-control"
+                    onFocus={(event) => event.target.showPicker && event.target.showPicker()}
+                  />
+                </div>
+                <div className="input-group">
+                  <span className="input-group-text"><i className="fas fa-clock"></i></span>
+                  <input
+                    type="time"
+                    value={activityTime || ""}
+                    onChange={handleActivityTime}
+                    className="form-control"
+                    onFocus={(event) => event.target.showPicker && event.target.showPicker()}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-3 input-group">
+                <span className="input-group-text"><i className="fas fa-map-marker-alt"></i></span>
+                <input
+                  type="text"
+                  value={activityAddress}
+                  onChange={handleActivityAddress}
+                  className="form-control"
+                  placeholder="Dirección (opcional)"
+                />
+              </div>
+
+              <button className="btn btn-login px-4" type="submit">
+                <i className="fas fa-plus-circle me-2"></i>
+                Crear actividad
+              </button>
+            </form>
+
+            {/* Lista de actividades */}
+            <div className="mt-4">
+              {activities.length > 0 ? (
+                <>
+                  <h4 className="mb-3 ms-2">
+                    {activities.length > 1
+                      ? `Actividades | ${activities.length}`
+                      : `Actividad | ${activities.length}`}
+                  </h4>
+                  <ul className="list-group">
+                    {activities.map((activity) => (
+                      <li
+                        key={activity.id}
+                        onClick={() => handleActivityDetails(activity)}
+                        className="list-group-item"
+                      >
+                        <div className="d-flex justify-content-between align-items-center mt-2">
+                          <span>
+                            <strong className="me-2">{activity.title}</strong>
+                            <span className="small text-muted">{activity.address}</span>
+                          </span>
+                          <button
+                            onClick={(event) => handleDeleteActivity(event, activity)}
+                            type="button"
+                            className="btn btn-sm text-white bg-danger"
+                          >
+                            <i className="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                        <div className="row mb-3">
+                          <div className="col-auto">
+                            <span className="me-3"><i className="fa-solid fa-calendar-days me-2"></i>{activity.date}</span>
+                            <span><i className="fa-solid fa-clock me-2"></i>{activity.time}</span>
+                          </div>
+                        </div>
+                        <div className="row mb-2">
+                          <div className="col">{activity.notes}</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <ul className="list-group">
+                  <li className="list-group-item text-muted">No hay actividades todavía</li>
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {/* Columna derecha: Mapa */}
+          <div className="col-md-6 mb-4" style={{ height: 500 }}>
+            <Map
+              apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+              destination={trip.title}
+              activities={activities}
+              onAddActivity={(place, event) => {
+                if (event) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+                setActivityAdress(place.formatted_address);
+              }}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="d-none"></div>
+      )}
+    </div>
+  );
+};
+

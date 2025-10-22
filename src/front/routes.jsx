@@ -1,51 +1,52 @@
-import {
-  createBrowserRouter,
-  createRoutesFromElements,
-  Route,
-} from "react-router-dom";
-
+import { createBrowserRouter, createRoutesFromElements, Route } from "react-router-dom";
 import { Layout } from "./pages/Layout.jsx";
+import { Error404 } from "./pages/Error404.jsx";
 import { Home } from "./pages/Home.jsx";
-import { SignUp } from "./pages/SignUp.jsx";
 import { Login } from "./pages/Login.jsx";
-import { RecoverPassword } from "./pages/RecoverPassword.jsx";
-import { ResetPassword } from "./pages/ResetPassword.jsx";
-import { Settings } from "./pages/Settings.jsx";
-import { Favorites } from "./pages/Favorites.jsx";
-import { Characters } from "./pages/Characters.jsx";
-import { CharacterDetails } from "./pages/CharacterDetails.jsx";
-import { Planets } from "./pages/Planets.jsx";
-import { PlanetDetails } from "./pages/PlanetDetails.jsx";
-import { Starships } from "./pages/Starships.jsx";
-import { StarshipDetails } from "./pages/StarshipDetails.jsx";
+import { Register } from "./pages/Register.jsx";
+import { ProfileSettings } from "./pages/ProfileSettings.jsx";
+import { Trips } from "./pages/Trips.jsx";
+import { TripDetails } from "./pages/TripDetails.jsx";
+import { TripUsers } from "./pages/TripUsers.jsx";
+import { TripUserDetails } from "./pages/TripUserDetails.jsx";
+import { Activities } from "./pages/Activities.jsx";
+import { ActivityDetails } from "./pages/ActivityDetails.jsx";
+import { StoryDetails } from "./pages/StoryDetails.jsx";
+import { Contact } from "./pages/Contact.jsx";
+import { MyStories } from "./pages/MyStories.jsx";
+import { CreateTrip } from "./pages/CreateTrip.jsx";
+import { RecoveryPassword } from "./pages/RecoveryPassword.jsx";
 
-<Route path="/settings" element={<Settings />} />
 
-export const router = createBrowserRouter(
-  createRoutesFromElements(
-    // CreateRoutesFromElements function allows you to build route elements declaratively.
-    // Create your routes here, if you want to keep the Navbar and Footer in all views, add your new routes inside the containing Route.
-    // Root, on the contrary, create a sister Route, if you have doubts, try it!
-    // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
-    // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
 
-    // Root Route: All navigation will start from here.
-    <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
-
-      {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
-      <Route path="/" element={<Home />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/recover-password" element={<RecoverPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/favorites" element={<Favorites />} />
-      <Route path="/characters" element={<Characters />} />
-      <Route path="/characters/:characterId" element={<CharacterDetails />} />
-      <Route path="/planets" element={<Planets />} />
-      <Route path="/planets/:planetId" element={<PlanetDetails />} />
-      <Route path="/starships" element={<Starships />} />
-      <Route path="/starships/:starshipId" element={<StarshipDetails />} />
-    </Route>
-  )
+/* 
+CreateRoutesFromElements function allows you to build route elements declaratively.
+Create your routes here, if you want to keep the Navbar and Footer in all views, add your new routes inside the containing Route.
+Root, on the contrary, create a sister Route, if you have doubts, try it!
+Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
+Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
+*/
+export const router = createBrowserRouter (
+    createRoutesFromElements (
+      // Root Route: All navigation will start from here.
+      <Route path="/" element={<Layout />} errorElement={<Error404/>} >
+        <Route path="/" element={<Home />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/activities" element={<Activities />} />
+        <Route path="/my-stories" element={<MyStories />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/recovery-password" element={<RecoveryPassword />} />
+        <Route path="/users/:user_id" element={<ProfileSettings />} />
+        <Route path="/trips" element={<Trips />} />
+        <Route path="/create-trip" element={<CreateTrip />} />
+        <Route path="/trips/:trip_id" element={<TripDetails />} />
+        <Route path="/trips/:trip_id/users" element={<TripUsers />} />
+        <Route path="/trips/:trip_id/users/:user_id" element={<TripUserDetails />} />
+        <Route path="/trips/:trip_id/activities" element={<Activities />} />
+       
+        <Route path="/trips/:trip_id/activities/:activity_id/stories/:story_id" element={<StoryDetails />} />
+      </Route>
+      
+    )
 );

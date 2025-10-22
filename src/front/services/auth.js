@@ -1,164 +1,86 @@
-const host = import.meta.env.VITE_BACKEND_URL;
+const host = import.meta.env.VITE_BACKEND_URL
 
 
-export const signup = async (userToPost) => {
-  const uri = `${host}/api/signup`;
-  const options = {
-    method: "POST",
-    headers: { "Content-type": "application/json" },
-    body: JSON.stringify(userToPost),
-  };
-  const response = await fetch(uri, options);
-  if (!response.ok) {
-    const backError = await response.json();
-    throw new Error(backError.message || `Error ${response.status}`);
-  }
-  const signupOk = await response.json();
-  localStorage.setItem("token", signupOk.access_token);
-  localStorage.setItem("user", JSON.stringify(signupOk.results));
-  localStorage.setItem("character-favorites", JSON.stringify([]));
-  localStorage.setItem("planet-favorites", JSON.stringify([]));
-  localStorage.setItem("starship-favorites", JSON.stringify([]));
-  return signupOk;
-};
-
-
-export const login = async (userToPost) => {
+export const login = async (userToLogin) => {
   const uri = `${host}/api/login`;
   const options = {
     method: "POST",
     headers: { "Content-type": "application/json" },
-    body: JSON.stringify(userToPost),
+    body: JSON.stringify(userToLogin),
   };
   const response = await fetch(uri, options);
-  if (!response.ok) {
-    const backError = await response.json();
-    throw new Error(backError.message || `Error ${response.status}`);
+  try {
+    if (!response.ok) {
+      console.log(response.status, " error");
+    }
+    const loginOk = await response.json();
+    return loginOk;
+  } catch {
+    console.error("Error posting login");
   }
-  const loginOk = await response.json();
-  localStorage.setItem("token", loginOk.access_token);
-  localStorage.setItem("user", JSON.stringify(loginOk.results));
-  return loginOk;
 };
 
 
-export const logout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("character-favorites");
-  localStorage.removeItem("planet-favorites");
-  localStorage.removeItem("starship-favorites");
-  localStorage.removeItem("characters");
-  localStorage.removeItem("planets");
-  localStorage.removeItem("starships");
-  const keys = Object.keys(localStorage);
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    if (key.includes("character-details")) {
-      localStorage.removeItem(key);
+export const register = async (userToPost) => {
+  const uri = `${host}/api/register`;
+  const options = {
+    method: "POST",
+    headers: { "Content-type": "application/json" },
+    body: JSON.stringify(userToPost),
+  };
+  const response = await fetch(uri, options);
+  try {
+    if (!response.ok) {
+      console.log(response.status, " error");
     }
-    if (key.includes("planet-details")) {
-      localStorage.removeItem(key);
+    const registerOk = await response.json();
+    return registerOk;
+  } catch {
+    console.error("Error posting user");
+  }
+};
+
+
+export const modifyUser = async (userId, userToPut) => {
+  const uri = `${host}/api/users/${userId}`;
+  const options = {
+    method: "PUT",
+    headers: { 
+      "Content-type": "application/json",
+      "Authorization": `Bearer ${localStorage.getItem("token")}`
+     },
+    body: JSON.stringify(userToPut),
+  };
+  const response = await fetch(uri, options);
+  try {
+    if (!response.ok) {
+      console.log(response.status, " error");
     }
-    if (key.includes("starship-details")) {
-      localStorage.removeItem(key);
-    }
+    const userPut = await response.json();
+    return userPut;
+  } catch {
+    console.error("Error putting user");
   }
 }
 
 
-export const recoverPassword = async (userToRecover) => {
-  const uri = `${host}/api/recover-password`;
-  const options = {
-    method: "POST",
-    headers: { "Content-type": "application/json" },
-    body: JSON.stringify(userToRecover),
-  };
-  const response = await fetch(uri, options);
-  if (!response.ok) {
-    const backError = await response.json();
-    throw new Error(backError.message || `Error ${response.status}`);
-  }
-  const recoverPasswordOk = await response.json();
-  const results = {
-    responseOk: response.status,
-    message: recoverPasswordOk.message
-  }
-  return results;
-};
-
-
-export const resetPassword = async (passwordToReset) => {
-  const uri = `${host}/api/reset-password`;
-  const options = {
-    method: "POST",
-    headers: { "Content-type": "application/json" },
-    body: JSON.stringify(passwordToReset),
-  };
-  const response = await fetch(uri, options);
-  if (!response.ok) {
-    const backError = await response.json();
-    throw new Error(backError.message || `Error ${response.status}`);
-  }
-  return response.status;
-};
-
-
-export const putUser = async (userId, userToPut) => {
-  const uri = `${host}/api/users/${userId}`;
-  const options = {
-    method: "PUT",
-    headers: {
-      "Content-type": "application/json",
-      "Authorization": `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify(userToPut),
-  };
-  const response = await fetch(uri, options);
-  if (!response.ok) {
-    const backError = await response.json();
-    throw new Error(backError.message || `Error ${response.status}`);
-  }
-  const userPut = await response.json();
-  localStorage.setItem("user", JSON.stringify(userPut.results));
-  return userPut.results;
-};
-
-
-export const deleteUser = async (userId) => {
+export const deleteUser = async (userId, userToDelete) => {
   const uri = `${host}/api/users/${userId}`;
   const options = {
     method: "DELETE",
-    headers: {
+    headers: { 
       "Content-type": "application/json",
-      "Authorization": `Bearer ${localStorage.getItem("token")}`,
-    },
+      "Authorization": `Bearer ${localStorage.getItem("token")}`
+     }
   };
   const response = await fetch(uri, options);
-  if (!response.ok) {
-    const backError = await response.json();
-    throw new Error(backError.message || `Error ${response.status}`);
+  try {
+    if (!response.ok) {
+      console.log(response.status, " error");
+    }
+    const userDeleted = await response.json();
+    return userDeleted;
+  } catch {
+    console.error("Error putting user");
   }
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("character-favorites");
-  localStorage.removeItem("planet-favorites");
-  localStorage.removeItem("starship-favorites");
-  localStorage.removeItem("characters");
-  localStorage.removeItem("planets");
-  localStorage.removeItem("starships");
-  const keys = Object.keys(localStorage);
-  for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
-    if (key.includes("character-details")) {
-      localStorage.removeItem(key);
-    }
-    if (key.includes("planet-details")) {
-      localStorage.removeItem(key);
-    }
-    if (key.includes("starship-details")) {
-      localStorage.removeItem(key);
-    }
-  }
-  return response.status;
-};
+}

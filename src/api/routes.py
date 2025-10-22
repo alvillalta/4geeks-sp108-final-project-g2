@@ -2,710 +2,732 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from flask_cors import CORS
 from api.utils import generate_sitemap, APIException
-from api.models import db, Users, CharacterFavorites, Characters, PlanetFavorites, Planets, StarshipFavorites, Starships
+from flask_cors import CORS
+from api.models import db, Users, Trips, UserTrips, Activities, Stories
+from sqlalchemy import asc
 from flask_jwt_extended import create_access_token
-from flask_jwt_extended import decode_token
+from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import get_jwt
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import asc
-from sqlalchemy import and_
-import smtplib
-import ssl
-from email.message import EmailMessage
-import requests
-import re
-import os
+import cloudinary.uploader
+from datetime import datetime
 
 
-backend_url = os.getenv("VITE_BACKEND_URL")
-email_user = os.getenv("EMAIL_USER")
-email_pass = os.getenv("EMAIL_PASS")
-smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-smtp_port = int(os.getenv("SMTP_PORT", 465))
 
-
-api = Blueprint("api", __name__)
+api = Blueprint('api', __name__)
 CORS(api)  # Allow CORS requests to this API
 
-
-def validate_email(email):
-        if not isinstance(email, str):
-            return "Invalid email"
-        elif not len(email) <= 100:
-            return "Email must be less than 100 characters"
-        elif any(character.isspace() for character in email):
-            return "Email must not contain any blank space"
-        elif not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
-            return "Use a valid email"
-        else: return None
-
-def validate_password(password):
-        symbols = "@$!%-*?&"
-        if not isinstance(password, str):
-            return "Invalid password"
-        elif not 8 <= len(password):
-            return "Password must be more than 8 characters"
-        elif not len(password) <= 64:
-            return "Password must be less than 64 characters"
-        elif any(character.isspace() for character in password):
-            return "Password must not contain any blank space"
-        elif not any(character.islower() for character in password):
-            return "Password must contain at least one lowercase letter"
-        elif not any(character.isupper() for character in password):
-            return "Password must contain at least one capital letter"
-        elif not any(character.isdigit() for character in password):
-            return "Password must contain at least one number"
-        elif not any(character in symbols for character in password):
-            return "Password must contain at least one of these symbols: @$!%-*?&"
-        else: return None
-
-def validate_name(name):
-        if not isinstance(name, str):
-            return "name must be a valid text"
-        elif not len(name) <= 50:
-            return "name must be less than 50 characters"
-        else: return None
-
-def send_mail(to_email, subject, body):
-    message = EmailMessage()
-    message["From"] = email_user
-    message["To"] = to_email
-    message["Subject"] = subject
-    message.set_content(body)
-    context = ssl.create_default_context()
-    mail_sent = {}
-    try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port, context=context) as server:
-            server.login(email_user, email_pass)
-            server.send_message(message)
-        mail_sent["message"] = f"Mail has been sent successfully"
-        mail_sent["results"] = True
-        return mail_sent
-    except Exception as error:
-        mail_sent["message"] = f"Error sending mail: {error}"
-        mail_sent["results"] = False
-        return mail_sent
-
-
-@api.route("/signup", methods=["POST"])
-def signup():
+# REGISTRO DE USUARIO
+@api.route("/register", methods=["POST"])
+def register():
     response_body = {}
-    user_to_post = request.json
-    user = Users()
-    email_exists = user_to_post.get("email", None)
-    if not email_exists or email_exists.strip() == "":
-        response_body["message"] = f"Email is required"
+    user_to_post = request.get_json()
+
+    # Validación básica
+    email = user_to_post.get("email", "").lower()
+    password = user_to_post.get("password")
+
+    if not email or not password:
         response_body["results"] = None
+        response_body["message"] = "Email and password are required"
         return jsonify(response_body), 400
-    email = email_exists.lower()
-    email_validation_error = validate_email(email)
-    if email_validation_error:
-        response_body["message"] = email_validation_error
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    existing_user = db.session.execute(db.select(Users).where(Users.email == email)).scalar()
+
+    # Verificar si ya existe el email
+    existing_user = db.session.execute(
+        db.select(Users).where(Users.email == email)
+    ).scalar()
     if existing_user:
-        response_body["message"] = f"User already exists"
         response_body["results"] = None
+        response_body["message"] = f"Email address {email} is already in use"
         return jsonify(response_body), 409
-    user.email = email
-    plain_password = user_to_post.get("password", None)
-    repeat_password = user_to_post.get("repeat_password", None)
-    if not plain_password or plain_password.strip() == "":
-        response_body["message"] = f"Password is required"
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    if plain_password != repeat_password:
-        response_body["message"] = f"Passwords do not match"
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    password_validation_error = validate_password(plain_password)
-    if password_validation_error:
-        response_body["message"] = password_validation_error
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    user.password = user.set_password(plain_password)
-    first_name = user_to_post.get("first_name", None)
-    if not first_name or first_name.strip() == "":
-        user.first_name = None
-    if first_name:
-        name_validation_error = validate_name(first_name)
-        if name_validation_error:
-            response_body["message"] = f"First {name_validation_error}"
-            response_body["results"] = None
-            return jsonify(response_body), 400
-        user.first_name = first_name
-    last_name = user_to_post.get("last_name", None)
-    if not last_name or last_name.strip() == "":
-        user.last_name = None
-    if last_name:
-        name_validation_error = validate_name(last_name)
-        if name_validation_error:
-            response_body["message"] = f"Last {name_validation_error}"
-            response_body["results"] = None
-            return jsonify(response_body), 400
-        user.last_name = last_name   
-    user.is_active = True
+
+    # Crear nuevo usuario
+    user = Users(
+        email=email,
+        password=password,
+        is_active=True,
+        first_name=user_to_post.get("first_name"),
+        last_name=user_to_post.get("last_name"),
+    )
     db.session.add(user)
     db.session.commit()
+
+    # Crear claims para JWT
     claims = {
-        "user_id": user.id, 
-        "email": user.email}
-    access_token = create_access_token(identity=f"{user.id}", additional_claims=claims, expires_delta=timedelta(minutes=60))
-    response_body["message"] = f"User {user.id} posted successfully"
-    response_body["results"] = user.serialize_basic()
+        "user_id": user.id
+    }
+    access_token = create_access_token(identity=user.email, additional_claims=claims)
+
+    response_body["results"] = user.serialize()
     response_body["access_token"] = access_token
+    response_body["message"] = f"User {user.id} created successfully"
     return jsonify(response_body), 201
 
 
+# LOGIN DE USUARIO
 @api.route("/login", methods=["POST"])
 def login():
     response_body = {}
     user_to_login = request.json
-    email_exists = user_to_login.get("email", None)
-    if not email_exists or email_exists.strip() == "":
-        response_body["message"] = f"Email is required"
+
+    email = user_to_login.get("email", "").lower()
+    password = user_to_login.get("password", "")
+
+    if not email or not password:
         response_body["results"] = None
+        response_body["message"] = "Email and password are required"
         return jsonify(response_body), 400
-    email = email_exists.lower()
-    email_validation_error = validate_email(email)
-    if email_validation_error:
-        response_body["message"] = email_validation_error
+
+    user = db.session.execute(
+        db.select(Users).where(
+            (Users.email == email),
+            (Users.password == password),
+            (Users.is_active == True)
+        )
+    ).scalar()
+
+    if not user:
         response_body["results"] = None
-        return jsonify(response_body), 400
-    password = user_to_login.get("password", None)
-    if not password or password.strip() == "":
-        response_body["message"] = f"Password is required"
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    user = db.session.execute(db.select(Users).where(and_(Users.email == email,
-                                                          Users.is_active == True))).scalar()
-    if not user or not user.check_password(password):
-        response_body["message"] = f"Invalid credentials"
-        response_body["results"] = None
+        response_body["message"] = "Invalid credentials"
         return jsonify(response_body), 401
+    
     claims = {
-        "user_id": user.id, 
-        "email": user.email}
-    access_token = create_access_token(identity=f"{user.id}", additional_claims=claims, expires_delta=timedelta(minutes=60))
-    response_body["message"] = f"User {user.email} logged successfully"
-    response_body["results"] = user.serialize_basic()
+        "user_id": user.id,
+        "email": user.email,
+        "is_active": user.is_active,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+    }
+    access_token = create_access_token(identity=user.email, additional_claims=claims)
+
+    response_body["results"] = user.serialize()
     response_body["access_token"] = access_token
+    response_body["message"] = f"User {user.id} logged in successfully"
     return jsonify(response_body), 200
 
 
-@api.route("/recover-password", methods=["POST"])
-def recover_password():
+# OBTENER TODOS LOS USUARIOS ACTIVOS
+@api.route("/users", methods=["GET"])
+@jwt_required()
+def get_users():
     response_body = {}
-    user_to_recover = request.json
-    recovery_email_exists = user_to_recover.get("recovery_email", None)
-    if not recovery_email_exists or recovery_email_exists.strip() == "":
-        response_body["message"] = f"Email is required"
+
+    users = db.session.execute(
+        db.select(Users).where(Users.is_active == True).order_by(asc(Users.id))
+    ).scalars()
+
+    results = [user.serialize_relationships() for user in users]
+
+    if not results:
         response_body["results"] = None
-        return jsonify(response_body), 400
-    recovery_email = recovery_email_exists.lower()
-    email_validation_error = validate_email(recovery_email)
-    if email_validation_error:
-        response_body["message"] = email_validation_error
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    user = db.session.execute(db.select(Users).where(and_(Users.email == recovery_email,
-                                                          Users.is_active == True))).scalar()
-    if not user:
-        response_body["message"] = f"Invalid email"
-        response_body["results"] = None
+        response_body["message"] = "No active users found"
         return jsonify(response_body), 404
-    reset_token = create_access_token(identity=f"{user.id}", expires_delta=timedelta(minutes=30))
-    reset_token_expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
-    user.reset_token = reset_token
-    user.reset_token_expires_at = reset_token_expires_at
-    db.session.commit()
-    reset_link = f"{backend_url}/reset-password?token={reset_token}"
-    mail_sent = send_mail(
-        user.email, 
-        "Reset your Star Wars account password", 
-        f"Please click here to reset your password: {reset_link}")
-    if mail_sent["results"] == False:
-        response_body["error"] = mail_sent["message"]
-        response_body["message"] = "Something went wrong"
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    response_body["message"] = f"If the email exists, check your inbox"
-    response_body["results"] = None
+
+    response_body["results"] = results
+    response_body["message"] = "Users retrieved successfully"
     return jsonify(response_body), 200
 
 
-@api.route("/reset-password", methods=["POST"])
-def reset_password():
-    response_body = {}
-    data = request.json
-    reset_token = data.get("token")
-    decoded_token = decode_token(reset_token)
-    user_id = decoded_token["sub"]
-    if not user_id:
-        response_body["message"] = f"Invalid credentials"
-        response_body["results"] = None
-        return jsonify(response_body), 401
-    new_password = data.get("new_password")
-    confirm_password = data.get("confirm_password")
-    if not new_password or new_password.strip() == "":
-        response_body["message"] = f"Password is required"
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    if new_password != confirm_password:
-        response_body["message"] = f"Passwords do not match"
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    password_validation_error = validate_password(new_password)
-    if password_validation_error:
-        response_body["message"] = password_validation_error
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    user = db.session.execute(db.select(Users).where(and_(Users.id == user_id,
-                                                          Users.is_active == True))).scalar()
-    if not user:
-        response_body["message"] = f"User to recover not found"
-        response_body["results"] = None
-        return jsonify(response_body), 404
-    if user.reset_token != reset_token:
-        response_body["message"] = "Invalid reset token"
-        response_body["results"] = None
-        return jsonify(response_body), 401
-    if user.reset_token_expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-        response_body["message"] = f"Time out for resetting the password"
-        response_body["results"] = None
-        return jsonify(response_body), 400
-    user.set_password(new_password)
-    user.reset_token = None
-    user.reset_token_expires_at = None
-    db.session.commit()
-    response_body["message"] = f"Password reset successfully"
-    response_body["results"] = None
-    return jsonify(response_body), 200
-
-
+# OBTENER, ACTUALIZAR O ELIMINAR USUARIO POR ID
 @api.route("/users/<int:user_id>", methods=["GET", "PUT", "DELETE"])
 @jwt_required()
 def handle_user(user_id):
     response_body = {}
+
+    user = db.session.execute(
+        db.select(Users).where(Users.id == user_id)
+    ).scalar()
+
+    if not user or not user.is_active:
+        response_body["results"] = None
+        response_body["message"] = f"User {user_id} not found"
+        return jsonify(response_body), 404
+
+    claims = get_jwt()
+    current_user_id = claims.get("user_id")
+
+    if request.method == "GET":
+        response_body["results"] = user.serialize_relationships()
+        response_body["message"] = f"User {user.id} retrieved successfully"
+        return jsonify(response_body), 200
+
+    if request.method == "PUT":
+        if current_user_id != user_id:
+            response_body["results"] = None
+            response_body["message"] = f"User {current_user_id} is not authorized to update user {user_id}"
+            return jsonify(response_body), 403
+
+        data_input = request.json
+
+        # Validar si se intenta cambiar a un email que ya existe en otro usuario
+        new_email = data_input.get("email", user.email).lower()
+        if new_email != user.email:
+            existing_user = db.session.execute(
+                db.select(Users).where(Users.email == new_email)
+            ).scalar()
+            if existing_user:
+                response_body["results"] = None
+                response_body["message"] = "Email address is already in use"
+                return jsonify(response_body), 409
+            user.email = new_email
+
+        # Actualizar otros campos
+        user.password = data_input.get("password", user.password)
+        user.first_name = data_input.get("first_name", user.first_name)
+        user.last_name = data_input.get("last_name", user.last_name)
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            response_body["results"] = None
+            response_body["message"] = "Error updating user. Possible duplicate data."
+            return jsonify(response_body), 409
+
+        response_body["results"] = user.serialize()
+        response_body["message"] = f"User {user.id} updated successfully"
+        return jsonify(response_body), 200
+
+    if request.method == "DELETE":
+        if claims["user_id"] != user_id:
+            response_body["results"] = None
+            response_body["message"] = f"User {current_user_id} is not authorized to delete user {user_id}"
+            return jsonify(response_body), 403
+
+        user.is_active = False
+        db.session.commit()
+
+        response_body["results"] = user.serialize()
+        response_body["message"] = f"User {user.id} deleted successfully"
+        return jsonify(response_body), 200
+
+
+@api.route("/trips", methods=["GET"])
+@jwt_required()
+def handle_trips():
+    response_body = {}
     claims = get_jwt()
     token_user_id = claims["user_id"]
-    user_to_handle = db.session.execute(db.select(Users).where(Users.id == user_id)).scalar()
-    if not user_to_handle:
-        response_body["message"] = f"User {user_id} not found"
+    if not token_user_id:
+        response_body["message"] = "User not found"
         response_body["results"] = None
         return jsonify(response_body), 404
     if request.method == "GET":
-        results = user_to_handle.serialize_full()
-        response_body["message"] = f"User {user_id} got successfully"
+        user_is_associated = db.session.execute(db.select(UserTrips).where(UserTrips.user_id == token_user_id)).scalars()
+        user_is_owner = db.session.execute(db.select(Trips).where(Trips.trip_owner_id == token_user_id)).scalars()
+        if not user_is_owner and not user_is_associated:
+            response_body["message"] = f"User {token_user_id} does not own or is associated with any trips"
+            response_body["results"] = {"user_trips": [], 
+                                        "trips_owner": []}
+            return jsonify(response_body), 404
+        if not user_is_owner:
+            user_results = [row.serialize_trips() for row in user_is_associated]
+            response_body["message"] = f"Trips from participant {token_user_id} got successfully"
+            response_body["results"] = {"user_trips": user_results, 
+                                        "trips_owner": []}
+            return jsonify(response_body), 200
+        if not user_is_associated:
+            owner_results = [row.serialize() for row in user_is_owner]
+            response_body["message"] = f"Trips from owner {token_user_id} got successfully"
+            response_body["results"] = {"user_trips": [], 
+                                        "trips_owner": owner_results}
+            return jsonify(response_body), 200
+        user_results = [row.serialize_trips() for row in user_is_associated]
+        owner_results = [row.serialize() for row in user_is_owner]
+        response_body["message"] = f"Trips from user {token_user_id} got successfully"
+        response_body["results"] = {"user_trips": user_results, 
+                                    "trips_owner": owner_results}
+        return jsonify(response_body), 200
+    
+
+@api.route("/create-trip", methods=["POST"])
+@jwt_required()
+def handle_create_trip():
+    response_body = {}
+    claims = get_jwt()
+    token_user_id = claims["user_id"]
+    if not token_user_id:
+        response_body["message"] = "User not found"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    if request.method == "POST":
+        data = request.json
+        trip_owner_id = token_user_id
+        title = data.get("title", None)
+        start_date = data.get("start_date", None)
+        end_date = data.get("end_date", None)
+        publicated = data.get("publicated", None)
+        trip = Trips()
+        trip.trip_owner_id = trip_owner_id
+        trip.title = title
+        start_date_string = data.get("start_date")
+        end_date_string = data.get("end_date")
+        start_date = datetime.strptime(start_date_string, "%Y-%m-%d").date() if start_date_string else None
+        end_date = datetime.strptime(end_date_string, "%Y-%m-%d").date() if end_date_string else None
+        trip.start_date = start_date
+        trip.end_date = end_date
+        trip.publicated = publicated
+        db.session.add(trip)
+        db.session.commit()
+        results = trip.serialize()
+        response_body["message"] = f"User {trip_owner_id} now owns trip {trip.id}"
+        response_body["results"] = results
+        return jsonify(response_body), 200
+
+
+@api.route("/trips/<int:trip_id>", methods=["GET", "PUT", "DELETE"])
+@jwt_required()
+def handle_trip(trip_id):
+    response_body = {}
+    claims = get_jwt()
+    token_user_id = claims["user_id"]
+    if not token_user_id:
+        response_body["message"] = "Current user not found"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    trip = db.session.execute(db.select(Trips).where(Trips.id == trip_id)).scalar()
+    if not trip:
+        response_body["message"] = f"Trip {trip_id} not found"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    trip_owner_id = trip.trip_owner_id
+    user_is_owner = trip_owner_id == token_user_id
+    if request.method == "GET":
+        if not user_is_owner:
+            user_is_associated = db.session.execute(db.select(UserTrips).where(UserTrips.trip_id == trip_id, 
+                                                                         UserTrips.user_id == token_user_id)).scalar()
+            if not user_is_associated:
+                publicated = db.session.execute(db.select(Trips).where(Trips.publicated == True,
+                                                                       Trips.id == trip_id)).scalar()
+                if not publicated:
+                    response_body["message"] = f"User {token_user_id} is not allowed to get trip {trip_id}"
+                    response_body["results"] = None
+                    return jsonify(response_body), 403
+        results = trip.serialize_relationships()
+        response_body["message"] = f"Trip {trip.title} got successfully"
         response_body["results"] = results
         return jsonify(response_body), 200
     if request.method == "PUT":
-        if token_user_id != user_to_handle.id:
-            response_body["message"] = f"User {token_user_id} is not allowed to put {user_id}"
+        if not user_is_owner:
+            response_body["message"] = f"User {token_user_id} is not allowed to put trip {trip_id}"
             response_body["results"] = None
             return jsonify(response_body), 403
-        user_to_put = request.json
-        first_name = user_to_put.get("first_name", None)
-        if not first_name or first_name.strip() == "":
-            user_to_handle.first_name = None
-        if first_name:
-            name_validation_error = validate_name(first_name)
-            if name_validation_error:
-                response_body["message"] = f"First {name_validation_error}"
-                response_body["results"] = None
-                return jsonify(response_body), 400
-            user_to_handle.first_name = first_name
-        last_name = user_to_put.get("last_name", None)
-        if not last_name or last_name.strip() == "":
-            user_to_handle.last_name = None
-        if last_name:
-            name_validation_error = validate_name(last_name)
-            if name_validation_error:
-                response_body["message"] = f"Last {name_validation_error}"
-                response_body["results"] = None
-                return jsonify(response_body), 400
-            user_to_handle.last_name = last_name
+        data_input = request.json
+        trip.title = data_input.get("title", trip.title)
+        start_date_string = data_input.get("start_date")
+        end_date_string = data_input.get("end_date")
+        trip.start_date = datetime.strptime(start_date_string, "%Y-%m-%d").date() if start_date_string else None
+        trip.end_date = datetime.strptime(end_date_string, "%Y-%m-%d").date() if end_date_string else None
+        trip.publicated = data_input.get("publicated", trip.publicated)
         db.session.commit()
-        results = user_to_handle.serialize_basic()
-        response_body["message"] = f"User {user_to_handle.id} put successfully"
-        response_body["results"] = results
+        response_body["results"] = trip.serialize()
+        response_body["message"] = f"Trip {trip_id} put successfully"
         return jsonify(response_body), 200
     if request.method == "DELETE":
-        if token_user_id != user_to_handle.id:
-            response_body["message"] = f"User {token_user_id} is not allowed to delete {user_id}"
+        if not user_is_owner:
+            response_body["message"] = f"User {token_user_id} is not allowed to delete trip {trip_id}"
             response_body["results"] = None
             return jsonify(response_body), 403
-        user_to_handle.is_active = False
+        db.session.delete(trip)
         db.session.commit()
-        response_body["message"] = f"User {user_to_handle.id} deleted successfully"
-        response_body["results"] = None
+        response_body["message"] = f"Trip {trip_id} deleted successfully"
+        response_body["results"] = {}
         return jsonify(response_body), 200
+    
 
-
-@api.route("/users/<int:user_id>/favorites", methods=["GET"])
+@api.route("/trips/<int:trip_id>/users", methods=["GET", "POST"])
 @jwt_required()
-def handle_favorites(user_id):
+def handle_trip_users(trip_id):
     response_body = {}
-    user_to_handle = db.session.execute(db.select(Users).where(Users.id == user_id)).scalar()
-    if not user_to_handle:
-        response_body["message"] = f"User {user_id} not found"
+    claims = get_jwt()
+    token_user_id = claims["user_id"]
+    if not token_user_id:
+        response_body["message"] = "Current user not found"
         response_body["results"] = None
         return jsonify(response_body), 404
-    if request.method == "GET":
-        character_favorites = db.session.execute(db.select(CharacterFavorites).where(CharacterFavorites.user_id == user_id).order_by(asc(CharacterFavorites.created_at))).scalars()
-        planet_favorites = db.session.execute(db.select(PlanetFavorites).where(PlanetFavorites.user_id == user_id).order_by(asc(PlanetFavorites.created_at))).scalars()
-        starship_favorites = db.session.execute(db.select(StarshipFavorites).where(StarshipFavorites.user_id == user_id).order_by(asc(StarshipFavorites.created_at))).scalars()
-        if not character_favorites and not planet_favorites and not starship_favorites:
-            response_body["message"] = f"User {user_id} has no favorites"
-            response_body["characterFavorites"] = []
-            response_body["planetFavorites"] = []
-            response_body["starshipFavorites"] = []
+    trip = db.session.execute(db.select(Trips).where(Trips.id == trip_id)).scalar()
+    if not trip:
+        response_body["results"] = None
+        response_body["message"] = f"Trip {trip_id} not found"
+        return jsonify(response_body), 404
+    trip_owner_id = trip.trip_owner_id
+    user_is_owner = trip_owner_id == token_user_id
+    if request.method == 'GET':
+        if not user_is_owner:
+            user_is_associated = db.session.execute(db.select(UserTrips).where(UserTrips.user_id == token_user_id,
+                                                                               UserTrips.trip_id == trip_id)).scalar()
+            if not user_is_associated:
+                publicated = db.session.execute(db.select(Trips).where(Trips.publicated == True,
+                                                                       Trips.id == trip_id)).scalar()
+                if not publicated:
+                    response_body["message"] = f"User {token_user_id} is not allowed to get users from trip {trip_id}"
+                    response_body["results"] = None
+                    return jsonify(response_body), 403
+        trip_owner_user = db.session.execute(db.select(Users).where(Users.id == trip_owner_id)).scalar()
+        trip_owner_results = trip_owner_user.serialize()
+        users_in_trip =  db.session.execute(db.select(UserTrips).where(UserTrips.trip_id == trip_id)).scalars()
+        if not users_in_trip:
+            response_body["message"] = f"Trip {trip_id} has no users associated yet"
+            response_body["results"] = {"trip_owner": trip_owner_results,
+                                        "trip_users": []}
             return jsonify(response_body), 200
-        character_results = [row.serialize() for row in character_favorites] if character_favorites else []
-        planet_results = [row.serialize() for row in planet_favorites] if planet_favorites else []
-        starship_results = [row.serialize() for row in starship_favorites] if starship_favorites else []
-        response_body["message"] = f"User {user_id} favorites got successfully"
-        response_body["characterFavorites"] = character_results
-        response_body["planetFavorites"] = planet_results
-        response_body["starshipFavorites"] = starship_results
+        users_results = [row.serialize_users() for row in users_in_trip]
+        response_body["message"] = f"Users from trip {trip_id} got successfully"
+        response_body["results"] = {"trip_owner": trip_owner_results,
+                                    "trip_users": users_results}
         return jsonify(response_body), 200
-
-
-@api.route("/characters")
-def handle_characters():
-    response_body = {}
-    characters = db.session.execute(db.select(Characters).order_by(Characters.id)).scalars().all()
-    if not characters:
-        characters_url = "https://www.swapi.tech/api/people"
-        while len(characters) < 20:
-            request = requests.get(characters_url)
-            if request.status_code != 200:
-                response_body["message"] = f"External server error"
-                response_body["results"] = None
-                return jsonify(response_body), 500
-            data = request.json()
-            for row in data["results"]:
-                new_character = Characters()
-                new_character.id = row["uid"]
-                new_character.name = row["name"]
-                db.session.add(new_character)
-            db.session.commit()
-            characters = db.session.execute(db.select(Characters).order_by(Characters.id)).scalars().all()
-            characters_url = data.get("next")
-            if not characters_url:
-                response_body["message"] = f"Error getting results from external server"
-                response_body["results"] = None
-                return jsonify(response_body), 502
-        if not characters:
-            response_body["message"] = f"Error getting characters"
+    if request.method == "POST":
+        # En el front otro endpoint para buscar por email
+        if not user_is_owner:
+            response_body["message"] = f"User {token_user_id} is not allowed to post user {user_id} to trip {trip_id}"
+            response_body["results"] = None
+            return jsonify(response_body), 403
+        data = request.json
+        user_email = data.get("user_email", None) # user email
+        print(user_email)
+        user = db.session.execute(db.select(Users).where(Users.email == user_email)).scalar()
+        print(user)
+        if not user:
+            response_body["message"] = f"User {user_email} not found"
             response_body["results"] = None
             return jsonify(response_body), 404
-    results = [row.serialize_cards() for row in characters]
-    response_body["message"] = f"Characters got successfully"
-    response_body["results"] = results
-    return jsonify(response_body), 200
-
-
-@api.route("/characters/<int:character_id>", methods=["GET"])
-def handle_character_details(character_id):
-    response_body = {}
-    character = db.session.execute(db.select(Characters).where(Characters.id == character_id)).scalar()
-    if not character:
-        response_body["message"] = f"Character {character_id} not found"
-        response_body["results"] = None
-        return jsonify(response_body), 404
-    if not character.height:  # Checking property height to see if the character is already saved in the data base
-        character_url = f"https://www.swapi.tech/api/people/{character_id}"
-        external_response = requests.get(character_url)
-        if external_response.status_code != 200:
-            response_body["message"] = f"External server error"
+        user_id = user.id
+        user_already_exists =  db.session.execute(db.select(UserTrips).where(UserTrips.trip_id == trip_id,
+                                                                             UserTrips.user_id == user_id)).scalar()                                           
+        if user_already_exists:
+            response_body["message"] = f"User {user_id} is already associated with trip {trip_id}"
             response_body["results"] = None
-            return jsonify(response_body), 500
-        data = external_response.json()
-        clean_data = data["result"]["properties"]
-        character.height = clean_data.get("height")
-        character.mass = clean_data.get("mass", None)
-        character.hair_color = clean_data.get("hair_color", None)
-        character.skin_color = clean_data.get("skin_color", None)
-        character.eye_color = clean_data.get("eye_color", None)
-        character.birth_year = clean_data.get("birth_year", None)
-        character.gender = clean_data.get("gender", None)
+            return jsonify(response_body), 404                                                                
+        user_trip = UserTrips()
+        user_trip.user_id = user_id
+        user_trip.trip_id = trip_id
+        db.session.add(user_trip)
         db.session.commit()
-        if not character.height:
-            response_body["message"] = f"Error getting character {character_id}"
-            response_body["results"] = None
-            return jsonify(response_body), 502
-    if request.method == "GET":      
-        results = character.serialize()
-        response_body["message"] = f"Character {character_id} got successfully"
+        results = user_trip.serialize()
+        response_body["message"] = f"User {user_id} has been posted to trip {trip_id}"
         response_body["results"] = results
         return jsonify(response_body), 200
 
 
-@api.route("/characters/<int:character_id>", methods=["POST", "DELETE"])
+@api.route("/trips/<int:trip_id>/users/<int:user_id>", methods=["DELETE"])
 @jwt_required()
-def handle_favorite_characters(character_id):
+def handle_user_in_trip(trip_id, user_id):
     response_body = {}
     claims = get_jwt()
     token_user_id = claims["user_id"]
-    character_exists = db.session.execute(db.select(Characters).where(Characters.id == character_id)).scalar()
-    if not character_exists:
-        response_body["message"] = f"Character {character_id} not found"
+    if not token_user_id:
+        response_body["message"] = "Current user not found"
         response_body["results"] = None
         return jsonify(response_body), 404
-    favorite_already_exists = db.session.execute(db.select(CharacterFavorites).where(and_(CharacterFavorites.user_id == token_user_id,
-                                                                                          CharacterFavorites.character_id == character_id))).scalar()
-    if request.method == "POST":
-        if favorite_already_exists:
-            response_body["message"] = f"User {token_user_id} has character {character_id} already saved as favorite"
-            response_body["results"] = None
-            return jsonify(response_body), 409
-        favorite_character = CharacterFavorites()
-        favorite_character.user_id = token_user_id
-        favorite_character.character_id = character_id
-        favorite_character.created_at = datetime.now(timezone.utc)
-        db.session.add(favorite_character)
-        db.session.commit()
-        results = favorite_character.serialize()
-        response_body["message"] = f"User {token_user_id} saved character {character_id} as favorite"
-        response_body["results"] = results
-        return jsonify(response_body), 201
-    if request.method == "DELETE":
-        if not favorite_already_exists:
-            response_body["message"] = f"User {token_user_id} has not character {character_id} saved as favorite"
-            response_body["results"] = None
-            return jsonify(response_body), 409
-        db.session.delete(favorite_already_exists)
-        db.session.commit()
-        response_body["message"] = f"User {token_user_id} deleted successfully character {character_id} from favorites"
+    trip = db.session.execute(db.select(Trips).where(Trips.id == trip_id)).scalar()
+    if not trip:
         response_body["results"] = None
+        response_body["message"] = f"Trip {trip_id} not found"
+        return jsonify(response_body), 404
+    user_trip = db.session.execute(db.select(UserTrips).where(UserTrips.user_id == user_id,
+                                                              UserTrips.trip_id == trip_id)).scalar()
+    if not user_trip:
+        response_body["results"] = None
+        response_body["message"] = f"User {user_id} not found in trip {trip_id}"
+        return jsonify(response_body), 404
+    if request.method == "DELETE":
+        trip_owner_id = trip.trip_owner_id
+        user_is_owner = trip_owner_id == token_user_id
+        if not user_is_owner:
+            user_is_associated = user_id == token_user_id
+            if not user_is_associated:
+                response_body["message"] = f"User {token_user_id} is not allowed to delete user {user_id} from {trip_id}"
+                response_body["result"] = None
+                return jsonify(response_body), 403
+        db.session.delete(user_trip)
+        db.session.commit()
+        response_body["message"] = f"User {user_id} deleted successfully from {trip_id}"
+        response_body["result"] = None
         return jsonify(response_body), 200
     
 
-@api.route("/planets")
-def handle_planets():
-    response_body = {}
-    planets = db.session.execute(db.select(Planets).order_by(Planets.id)).scalars().all()
-    if not planets:
-        planets_url = "https://www.swapi.tech/api/planets"
-        while len(planets) < 20:
-            request = requests.get(planets_url)
-            if request.status_code != 200:
-                response_body["message"] = f"External server error"
-                response_body["results"] = None
-                return jsonify(response_body), 500
-            data = request.json()
-            for row in data["results"]:
-                new_planet = Planets()
-                new_planet.id = row["uid"]
-                new_planet.name = row["name"]
-                db.session.add(new_planet)
-            db.session.commit()
-            planets = db.session.execute(db.select(Planets).order_by(Planets.id)).scalars().all()
-            planets_url = data.get("next")
-            if not planets_url:
-                response_body["message"] = f"Error getting results from external server"
-                response_body["results"] = None
-                return jsonify(response_body), 502
-        if not planets:
-            response_body["message"] = f"Error getting planets"
-            response_body["results"] = None
-            return jsonify(response_body), 404
-    results = [row.serialize_cards() for row in planets]
-    response_body["message"] = f"Planets got successfully"
-    response_body["results"] = results
-    return jsonify(response_body), 200
-
-
-@api.route("/planets/<int:planet_id>", methods=["GET"])
-def handle_planet_details(planet_id):
-    response_body = {}
-    planet = db.session.execute(db.select(Planets).where(Planets.id == planet_id)).scalar()
-    if not planet:
-        response_body["message"] = f"Planet {planet_id} not found"
-        response_body["results"] = None
-        return jsonify(response_body), 404
-    if not planet.diameter:
-        planet_url = f"https://www.swapi.tech/api/planets/{planet_id}"
-        external_response = requests.get(planet_url)
-        if external_response.status_code != 200:
-            response_body["message"] = f"External server error"
-            response_body["results"] = None
-            return jsonify(response_body), 500
-        data = external_response.json()
-        clean_data = data["result"]["properties"]
-        planet.diameter = clean_data.get("diameter")
-        planet.rotation_period = clean_data.get("rotation_period", None)
-        planet.orbital_period = clean_data.get("orbital_period", None)
-        planet.gravity = clean_data.get("gravity", None)
-        planet.population = clean_data.get("population", None)
-        planet.climate = clean_data.get("climate", None)
-        planet.terrain = clean_data.get("terrain", None)
-        db.session.commit()
-        if not planet.diameter:
-            response_body["message"] = f"Error getting planet {planet_id}"
-            response_body["results"] = None
-            return jsonify(response_body), 502
-    if request.method == "GET":      
-        results = planet.serialize()
-        response_body["message"] = f"Planet {planet_id} got successfully"
-        response_body["results"] = results
-        return jsonify(response_body), 200
-
-
-@api.route("/planets/<int:planet_id>", methods=["POST", "DELETE"])
+@api.route("/trips/<int:trip_id>/activities", methods=["GET", "POST"])
 @jwt_required()
-def handle_favorite_planets(planet_id):
+def handle_acivities(trip_id):
     response_body = {}
     claims = get_jwt()
     token_user_id = claims["user_id"]
-    planet_exists = db.session.execute(db.select(Planets).where(Planets.id == planet_id)).scalar()
-    if not planet_exists:
-        response_body["message"] = f"Planet {planet_id} not found"
+    if not token_user_id:
+        response_body["message"] = "Current user not found"
         response_body["results"] = None
         return jsonify(response_body), 404
-    favorite_already_exists = db.session.execute(db.select(PlanetFavorites).where(and_(PlanetFavorites.user_id == token_user_id,
-                                                                                       PlanetFavorites.planet_id == planet_id))).scalar()
-    if request.method == "POST":
-        if favorite_already_exists:
-            response_body["message"] = f"User {token_user_id} has planet {planet_id} already saved as favorite"
-            response_body["results"] = None
-            return jsonify(response_body), 409
-        favorite_planet = PlanetFavorites()
-        favorite_planet.user_id = token_user_id
-        favorite_planet.planet_id = planet_id
-        favorite_planet.created_at = datetime.now(timezone.utc)
-        db.session.add(favorite_planet)
-        db.session.commit()
-        results = favorite_planet.serialize()
-        response_body["message"] = f"User {token_user_id} saved planet {planet_id} as favorite"
-        response_body["results"] = results
-        return jsonify(response_body), 201
-    if request.method == "DELETE":
-        if not favorite_already_exists:
-            response_body["message"] = f"User {token_user_id} has not planet {planet_id} saved as favorite"
-            response_body["results"] = None
-            return jsonify(response_body), 409
-        db.session.delete(favorite_already_exists)
-        db.session.commit()
-        response_body["message"] = f"User {token_user_id} deleted successfully planet {planet_id} from favorites"
+    trip = db.session.execute(db.select(Trips).where(Trips.id == trip_id)).scalar()
+    if not trip:
+        response_body["message"] = f"Trip {trip_id} not found"
         response_body["results"] = None
+        return jsonify(response_body), 404
+    trip_owner_id = trip.trip_owner_id
+    user_is_owner = trip_owner_id == token_user_id
+    if request.method == 'GET':
+        if not user_is_owner:
+            user_is_associated = db.session.execute(db.select(UserTrips).where(UserTrips.user_id == token_user_id,
+                                                                               UserTrips.trip_id == trip_id)).scalar()
+            if not user_is_associated:
+                publicated = db.session.execute(db.select(Trips).where(Trips.publicated == True,
+                                                                       Trips.id == trip_id)).scalar()
+                if not publicated:
+                    response_body["message"] = f"User {token_user_id} is not allowed to get activities from trip {trip_id}"
+                    response_body["results"] = None
+                    return jsonify(response_body), 403
+        activities = db.session.execute(db.select(Activities).where(Activities.trip_id == trip_id)).scalars()
+        if not activities:
+            response_body["message"] = f"Trip {trip_id} has no activities yet"
+            response_body["results"] = []
+            return jsonify(response_body), 404
+        results = [row.serialize_relationships() for row in activities]
+        response_body["message"] = f"Activities from trip {trip_id} got successfully"
+        response_body["results"] = results
         return jsonify(response_body), 200
+    if request.method == "POST":
+        if not user_is_owner:
+            response_body["message"] = f"User {token_user_id} is not allowed to post activities in {trip_id}"
+            response_body["results"] = None
+            return jsonify(response_body), 403
+        data = request.get_json() 
+        title = data.get('title', None)
+        date_string = data.get("date")
+        time_string = data.get("time")
+        address = data.get('address', None)
+        notes = data.get('notes', None)
+        activity = Activities()
+        activity.trip_id = trip_id
+        activity.title = title
+        activity.date = datetime.strptime(date_string, "%Y-%m-%d").date() if date_string else None
+        activity.time = datetime.strptime(time_string, "%H:%M").time() if time_string else None
+        activity.address = address
+        activity.notes = notes
+        db.session.add(activity)
+        db.session.commit()
+        results = activity.serialize()
+        response_body["message"] = f"Activity {activity.id} has been posted to trip {trip_id}"
+        response_body["results"] = results
+        return jsonify(response_body), 200
+
+
+@api.route("/trips/<int:trip_id>/activities/<int:activity_id>", methods=["GET", "PUT", "DELETE"])
+@jwt_required()
+def handle_activity(trip_id, activity_id):
+    response_body = {}
+    claims = get_jwt()
+    token_user_id = claims["user_id"]
+    if not token_user_id:
+        response_body["message"] = "Current user not found"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    trip = db.session.execute(db.select(Trips).where(Trips.id == trip_id)).scalar()
+    if not trip:
+        response_body["message"] = f"Trip {trip_id} not found"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    activity = db.session.execute(db.select(Activities).where(Activities.trip_id == trip_id,
+                                                              Activities.id == activity_id)).scalar()
+    if not activity:
+        response_body["message"] = f"Activity {activity_id} not found in trip {trip_id}"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    trip_owner_id = trip.trip_owner_id
+    user_is_owner = trip_owner_id == token_user_id
+    if request.method == "GET":
+        if not user_is_owner:
+            user_is_associated = db.session.execute(db.select(UserTrips).where(UserTrips.trip_id == trip_id, 
+                                                                               UserTrips.user_id == token_user_id)).scalar()
+            if not user_is_associated:
+                publicated = db.session.execute(db.select(Trips).where(Trips.publicated == True,
+                                                                       Trips.id == trip_id)).scalar()
+                if not publicated:
+                    response_body["message"] = f"User {token_user_id} is not allowed to get activity {activity_id} from trip {trip_id}"
+                    response_body["results"] = None
+                    return jsonify(response_body), 403
+        results = activity.serialize_relationships()
+        response_body["message"] = f"Activity {activity_id} got successfully from trip {trip_id}"
+        response_body["results"] = results
+        return jsonify(response_body), 200
+    if request.method == "PUT":
+        if not user_is_owner:
+            response_body["message"] = f"User {token_user_id} is not allowed to put acitivity {activity_id} from trip {trip_id}"
+            response_body["result"] = None
+            return jsonify(response_body), 403
+        data = request.json
+        activity.trip_id = trip_id
+        activity.title = data.get('title', activity.title)
+        date_string = data.get("date")
+        time_string = data.get("time")
+        activity.date = datetime.strptime(date_string, "%Y-%m-%d").date() if date_string else None
+        activity.time = datetime.strptime(time_string, "%H:%M").time() if time_string else None
+        activity.address = data.get('address', activity.address)
+        activity.notes = data.get('notes', activity.notes)
+        db.session.commit()
+        response_body["result"] = activity.serialize()
+        response_body["message"] = f"Activity {activity_id} put successfully in trip {trip_id}"
+        return jsonify(response_body), 200
+    if request.method == "DELETE":
+        if not user_is_owner:
+            response_body["message"] = f"User {token_user_id} is not allowed to delete activity {activity_id} from trip {trip_id}"
+            response_body["result"] = None
+            return jsonify(response_body), 403
+        db.session.delete(activity)
+        db.session.commit()
+        response_body["message"] = f"Activity {activity_id} deleted successfully from trip {trip_id}"
+        response_body["result"] = None
+        return jsonify(response_body), 200
+
+
+@api.route("/trips/<int:trip_id>/activities/<int:activity_id>/stories", methods=["GET", "POST"])
+@jwt_required()
+def handle_stories(trip_id, activity_id):
+    response_body = {}
+    claims = get_jwt()
+    token_user_id = claims["user_id"]
+
+    if not token_user_id:
+        response_body["message"] = "Current user not found"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    trip = db.session.execute(db.select(Trips).where(Trips.id == trip_id)).scalar()
+    if not trip:
+        response_body["message"] = f"Trip {trip_id} not found"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    activity = db.session.execute(db.select(Activities).where(Activities.id == activity_id,
+                                                              Activities.trip_id == trip_id)).scalar()
+    if not activity:
+        response_body["message"] = f"Activity {activity_id} not found in trip {trip_id}"
+        response_body["results"] = None
+        return jsonify(response_body), 404
     
-
-@api.route("/starships")
-def handle_starships():
-    response_body = {}
-    starships = db.session.execute(db.select(Starships).order_by(Starships.id)).scalars().all()
-    if not starships:
-        starships_url = "https://www.swapi.tech/api/starships"
-        while len(starships) < 20:
-            request = requests.get(starships_url)
-            if request.status_code != 200:
-                response_body["message"] = f"External server error"
-                response_body["results"] = None
-                return jsonify(response_body), 500
-            data = request.json()
-            for row in data["results"]:
-                new_starship = Starships()
-                new_starship.id = row["uid"]
-                new_starship.name = row["name"]
-                db.session.add(new_starship)
-            db.session.commit()
-            starships = db.session.execute(db.select(Starships).order_by(Starships.id)).scalars().all()
-            starships_url = data.get("next")
-            if not starships_url:
-                response_body["message"] = f"Error getting results from external server"
-                response_body["results"] = None
-                return jsonify(response_body), 502
-        if not starships:
-            response_body["message"] = f"Error getting starships"
+    trip_owner_id = trip.trip_owner_id
+    user_is_owner = trip_owner_id == token_user_id
+    if request.method == 'GET':
+        if not user_is_owner:
+            user_is_associated = db.session.execute(db.select(UserTrips).where(UserTrips.user_id == token_user_id,
+                                                                               UserTrips.trip_id == trip_id)).scalar()
+            if not user_is_associated:
+                publicated = db.session.execute(db.select(Trips).where(Trips.publicated == True,
+                                                                       Trips.id == trip_id)).scalar()
+                if not publicated:
+                    response_body["message"] = f"User {token_user_id} is not allowed to get stories from trip {trip_id}"
+                    response_body["results"] = None
+                    return jsonify(response_body), 403
+        stories = db.session.execute(db.select(Stories).join(Activities).where(Stories.activity_id == activity_id,
+                                                                               Activities.trip_id == trip_id)).scalars()
+        if not stories:
+            response_body["message"] = f"Activity {activity_id} from trip {trip_id} has no stories yet"
             response_body["results"] = None
             return jsonify(response_body), 404
-    results = [row.serialize_cards() for row in starships]
-    response_body["message"] = f"Starships got successfully"
-    response_body["results"] = results
-    return jsonify(response_body), 200
+        results = [row.serialize() for row in stories]
+        response_body["message"] = f"Stories from activity {activity_id} in trip {trip_id} got successfully"
+        response_body["results"] = results
+        return jsonify(response_body), 200
+    if request.method == "POST":
+        if not user_is_owner:
+            user_is_associated = db.session.execute(db.select(UserTrips).where(UserTrips.user_id == token_user_id,
+                                                                               UserTrips.trip_id == trip_id)).scalar()
+            if not user_is_associated:
+                    response_body["message"] = f"User {token_user_id} is not allowed to post stories in trip {trip_id}"
+                    response_body["results"] = None
+                    return jsonify(response_body), 403
+      #Subir imagen a cloudinary
+        print ("LLEGAMOS")
+        image = request.files.get('media')
+        if not image:
+           response_body["message"] = "No image file provided"
+           response_body["results"] = None
+           return jsonify(response_body), 400
+        result = cloudinary.uploader.upload(
+            image,
+            folder=f"trips/{trip_id}/activities/{activity_id}/stories",
+            overwrite=True
+        )
+        print (result)
+        media_url = result["secure_url"]
+        media_public_id = result["public_id"]
 
-
-@api.route("/starships/<int:starship_id>", methods=["GET"])
-def handle_starship_details(starship_id):
-    response_body = {}
-    starship = db.session.execute(db.select(Starships).where(Starships.id == starship_id)).scalar()
-    if not starship:
-        response_body["message"] = f"Starship {starship_id} not found"
-        response_body["results"] = None
-        return jsonify(response_body), 404
-    if not starship.length:  
-        starship_url = f"https://www.swapi.tech/api/starships/{starship_id}"
-        external_response = requests.get(starship_url)
-        if external_response.status_code != 200:
-            response_body["message"] = f"External server error"
-            response_body["results"] = None
-            return jsonify(response_body), 500
-        data = external_response.json()
-        clean_data = data["result"]["properties"]
-        starship.consumables = clean_data.get("consumables", None)
-        starship.cargo_capacity = clean_data.get("cargo_capacity", None)
-        starship.passengers = clean_data.get("passengers", None)
-        starship.max_atmosphering_speed = clean_data.get("max_atmosphering_speed", None)
-        starship.cost_in_credits = clean_data.get("cost_in_credits", None)
-        starship.length = clean_data.get("length", None)
-        starship.model = clean_data.get("model", None)
-        starship.manufacturer = clean_data.get("manufacturer", None)
-        starship.starship_class = clean_data.get("starship_class", None)
-        starship.hyperdrive_rating = clean_data.get("hyperdrive_rating", None)
+         # Crear historia
+        story = Stories(
+            user_id=token_user_id,
+            media_url=media_url,
+            media_public_id=media_public_id,
+            activity_id=activity_id
+        )
+        db.session.add(story)
         db.session.commit()
-        if not starship.length:
-            response_body["message"] = f"Error getting starship {starship_id}"
-            response_body["results"] = None
-            return jsonify(response_body), 502
-    if request.method == "GET":      
-        results = starship.serialize()
-        response_body["message"] = f"Starship {starship_id} got successfully"
+        db.session.commit()
+        results = story.serialize()
+        response_body["message"] = f"Story {story.id} has been posted to activity {activity_id} in trip {trip_id}"
         response_body["results"] = results
         return jsonify(response_body), 200
 
 
-@api.route("/starships/<int:starship_id>", methods=["POST", "DELETE"])
+@api.route("/trips/<int:trip_id>/activities/<int:activity_id>/stories/<int:story_id>", methods=["GET", "DELETE"])
 @jwt_required()
-def handle_favorite_starships(starship_id):
+def handle_activity_story(trip_id, activity_id, story_id):
     response_body = {}
     claims = get_jwt()
     token_user_id = claims["user_id"]
-    starship_exists = db.session.execute(db.select(Starships).where(Starships.id == starship_id)).scalar()
-    if not starship_exists:
-        response_body["message"] = f"Starship {starship_id} not found"
+    if not token_user_id:
+        response_body["message"] = "Current user not found"
         response_body["results"] = None
         return jsonify(response_body), 404
-    favorite_already_exists = db.session.execute(db.select(StarshipFavorites).where(and_(StarshipFavorites.user_id == token_user_id,
-                                                                                         StarshipFavorites.starship_id == starship_id))).scalar()
-    if request.method == "POST":
-        if favorite_already_exists:
-            response_body["message"] = f"User {token_user_id} has starship {starship_id} already saved as favorite"
-            response_body["results"] = None
-            return jsonify(response_body), 409
-        favorite_starship = StarshipFavorites()
-        favorite_starship.user_id = token_user_id
-        favorite_starship.starship_id = starship_id
-        favorite_starship.created_at = datetime.now(timezone.utc)
-        db.session.add(favorite_starship)
-        db.session.commit()
-        results = favorite_starship.serialize()
-        response_body["message"] = f"User {token_user_id} saved starship {starship_id} as favorite"
-        response_body["results"] = results
-        return jsonify(response_body), 201
-    if request.method == "DELETE":
-        if not favorite_already_exists:
-            response_body["message"] = f"User {token_user_id} has not starship {starship_id} saved as favorite"
-            response_body["results"] = None
-            return jsonify(response_body), 409
-        db.session.delete(favorite_already_exists)
-        db.session.commit()
-        response_body["message"] = f"User {token_user_id} deleted successfully starship {starship_id} from favorites"
+    trip = db.session.execute(db.select(Trips).where(Trips.id == trip_id)).scalar()
+    if not trip:
+        response_body["message"] = f"Trip {trip_id} not found"
         response_body["results"] = None
+        return jsonify(response_body), 404
+    activity = db.session.execute(db.select(Activities).where(Activities.trip_id == trip_id,
+                                                              Activities.id == activity_id)).scalar()
+    if not activity:
+        response_body["message"] = f"Activity {activity_id} not found in trip {trip_id}"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    story = db.session.execute(db.select(Stories).join(Activities).where(Stories.id == story_id,
+                                                                         Stories.activity_id == activity_id,
+                                                                         Activities.trip_id == trip_id)).scalar()
+    if not story:
+        response_body["message"] = f"Story {story_id} not found in activity {activity_id} from trip {trip_id}"
+        response_body["results"] = None
+        return jsonify(response_body), 404
+    trip_owner_id = trip.trip_owner_id
+    user_is_owner = trip_owner_id == token_user_id
+    if request.method == "GET":
+        if not user_is_owner:
+            user_is_associated = db.session.execute(db.select(UserTrips).where(UserTrips.trip_id == trip_id, 
+                                                                               UserTrips.user_id == token_user_id)).scalar()
+            if not user_is_associated:
+                publicated = db.session.execute(db.select(Trips).where(Trips.publicated == True,
+                                                                       Trips.id == trip_id)).scalar()
+                if not publicated:
+                    response_body["message"] = f"User {token_user_id} is not allowed to get story {story_id} in activity {activity_id} from trip {trip_id}"
+                    response_body["results"] = None
+                    return jsonify(response_body), 403
+        results = story.serialize()
+        response_body["message"] = f"Story {story_id} got successfully from activity {activity_id} in trip {trip_id}"
+        response_body["results"] = results
         return jsonify(response_body), 200
+    if request.method == "DELETE":
+        if not user_is_owner:
+            story_user = db.session.execute(db.select(Stories).join(Activities).where(Stories.user_id == token_user_id,
+                                                                                      Stories.id == story_id,
+                                                                                      Stories.activity_id == activity_id,
+                                                                                      Activities.trip_id == trip_id)).scalar()
+            if not story_user:
+                response_body["message"] = f"User {token_user_id} is not allowed to delete story {story_id} from activity {activity_id} in {trip_id}"
+                response_body["result"] = None
+                return jsonify(response_body), 403
+            
+    #  Eliminar imagen de Cloudinary
+    if story.media_public_id:
+        cloudinary.uploader.destroy(story.media_public_id)
+
+     # Eliminar historia
+    db.session.delete(story)
+    db.session.commit()
+        
+    response_body["message"] = f"Story {story_id} deleted successfully from activity {activity_id} in trip {trip_id}"
+    response_body["result"] = None
+    return jsonify(response_body), 200

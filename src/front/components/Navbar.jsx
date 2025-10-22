@@ -1,162 +1,178 @@
-import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import starWarsLogo from "../assets/star-wars-logo.png";
-import { logout } from "../services/auth.js";
+import tripPlanningLogo from "../assets/img/trip_planning.png";
+
 
 export const Navbar = () => {
-	const navigate = useNavigate();
-	const [isToggled, setIsToggled] = useState(false);
-	const [isClosing, setIsClosing] = useState(false);
-	const { store, dispatch } = useGlobalReducer();
-	const isLogged = store.login.isLogged;
-	const characterFavorites = store.characterFavorites;
-	const planetFavorites = store.planetFavorites;
-	const starshipFavorites = store.starshipFavorites;
-	const favoritesLength = characterFavorites.length + planetFavorites.length + starshipFavorites.length;
 
-	const showToggler = () => {
-		if (!isToggled) {
-			setIsToggled(true);
-		}
-		else {
-			setIsClosing(true);
-			setTimeout(() => {
-				setIsClosing(false);
-				setIsToggled(false);
-			}, 300);
-		}
-	}
+  //  Declatations
+  const navigate = useNavigate();
+  const { store, dispatch } = useGlobalReducer();
+  const userLogged = store.login.isLogged
 
-	const handleLogIn = () => {
-		if (isLogged) {
-			logout();
-			dispatch({ type: "CLEAR-STORE" });
-			navigate("/");
-		} else {
-			navigate("/login");
-		}
-	}
+  // Función para cerrar menú colapsable en móvil
+  const closeMenu = () => {
+    const navbar = document.getElementById("navbarNavDropdown");
+    if (navbar && navbar.classList.contains("show")) {
+      new window.bootstrap.Collapse(navbar).hide();
+    }
+  };
 
-	const handleSignUp = () => {
-		if (isLogged) {
-			navigate("/settings")
-		} else {
-			navigate("/signup");
-		}
-	}
+  //  Handlers
+  const handleLogIn = () => {
+    if (userLogged) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("current-user");
+      localStorage.removeItem("trips-storage");
+      localStorage.removeItem("activities-storage");
+      dispatch({ type: "CLEAR" });
+      navigate("/");
+    } else {
+      navigate("/login");
+    }
+  };
 
-	const handleFavorites = () => {
-		if (favoritesLength > 0) {
-			navigate("/favorites");
-		} else {
-			dispatch({
-				type: "SET-NOTIFICATION",
-				payload: "There are no favorites yet"
-			});
-		}
-	}
+  const handleRegister = () => {
+    if (userLogged) {
+      const userId = store.currentUser.id;
+      navigate(`/users/${userId}`);
+    } else {
+      navigate("/register");
+    }
+  };
 
-	return (
-		<nav className="navbar navbar-light bg-light">
-			<div className="container d-flex justify-content-between align-items-center my-2">
-				<div className="d-flex d-lg-none px-2 pt-3 mt-4">
-					<div className="position-absolute top-0 start-0 my-3 ms-4">
-						<Link to="/">
-							<img src={starWarsLogo} className="css-navbar-logo img-fluid" />
-						</Link>
-					</div>
-					<button type="button" onClick={showToggler} className="navbar-toggler position-absolute top-0 end-0 my-3 me-4 shadow-none">
-						<span className="navbar-toggler-icon"></span>
-					</button>
-					<div id="offcanvas" className={`offcanvas offcanvas-end css-z-index-2000 justify-content-start align-items-end gap-3 px-4
-					${isToggled ? `${isClosing ? "closing" : "show"}` : ""}`}>
-						<button type="button" onClick={showToggler} className="navbar-toggler css-z-index-2000 position-absolute top-0 end-0 my-3 me-4 border-dark border-5 border-opacity-75 rounded-3 shadow-none">
-							<span className="navbar-toggler-icon"></span>
-						</button>
-						<div className="d-flex flex-column align-items-end gap-3 mt-5 pt-5">
-							<Link to="/characters" onClick={showToggler} className="nav-link text-decoration-none">
-								<span className="h5">Characters</span>
-							</Link>
-							<Link to="/planets" onClick={showToggler} className="nav-link text-decoration-none">
-								<span className="h5">Planets</span>
-							</Link>
-							<Link to="/starships" onClick={showToggler} className="nav-link text-decoration-none">
-								<span className="h5">Starships</span>
-							</Link>
-							<button type="button" onClick={() => { handleFavorites(); showToggler(); }}
-							className={`${isLogged ? `btn-${favoritesLength > 0 ? "dark" : "secondary"}` : "d-none"} btn position-relative`}>
-								{favoritesLength > 0 ?
-									<span>
-										Favorites
-										<span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-											{favoritesLength}
-										</span>
-									</span>
-									:
-									<span>
-										Favorites
-									</span>
-								}
-							</button>
-						</div>
-						<div className="d-flex flex-column gap-3 mt-5">
-							<button onClick={() => { handleLogIn(); showToggler(); }} type="button" className="btn btn-light text-dark-subtle border-dark">
-								{isLogged ? "Log Out" : "Log In"}
-							</button>
-							<button onClick={() => { handleSignUp(); showToggler(); }} type="button" className="btn btn-dark border-dark">
-								{isLogged ? "Settings" : "Sign Up"}
-							</button>
-						</div>
-					</div>
-					{isToggled || isClosing ? 
-						<div onClick={showToggler} className={`${isClosing ? "css-opacity-closing" : "css-opacity-06"} css-z-index-1055 position-fixed top-0 start-0 w-100 h-100 bg-dark`}></div>
-						: 
-						<div className="d-none"></div>
-					}
-				</div>
-				<div className="d-none d-lg-flex css-logo-negative-space">
-					<Link to="/">
-						<img src={starWarsLogo} className="css-navbar-logo img-fluid" />
-					</Link>
-				</div>
-				<div className="d-none d-lg-flex align-items-center gap-3">
-					<Link to="/characters" className="nav-link text-decoration-none">
-						<span className="h5">Characters</span>
-					</Link>
-					<Link to="/planets" className="nav-link text-decoration-none">
-						<span className="h5">Planets</span>
-					</Link>
-					<Link to="/starships" className="nav-link text-decoration-none">
-						<span className="h5">Starships</span>
-					</Link>
-					<Link to="/contacts" className="d-none nav-link text-decoration-none">
-						<span className="h5">Contacts</span>
-					</Link>
-					<button type="button" onClick={handleFavorites} className={`${isLogged ? `btn-${favoritesLength > 0 ? "dark" : "secondary"}` : "d-none"} btn position-relative`}>
-						{favoritesLength > 0 ?
-							<span>
-								Favorites
-								<span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-									{favoritesLength}
-								</span>
-							</span>
-							:
-							<span>
-								Favorites
-							</span>
-						}
-					</button>
-				</div>
-				<div className="d-none d-lg-flex gap-3">
-					<button onClick={handleLogIn} type="button" className="btn btn-light text-dark-subtle border-dark">
-						{isLogged ? "Log Out" : "Log In"}
-					</button>
-					<button onClick={handleSignUp} type="button" className="btn btn-dark border-dark">
-						{isLogged ? "Settings" : "Sign Up"}
-					</button>
-				</div>
-			</div>
-		</nav>
-	);
+  return (
+    <nav className="navbar navbar-expand-lg navbar-custom">
+      <div className="container my-2">
+
+        {/* Logo */}
+        <Link to="/" className="navbar-brand" onClick={closeMenu}>
+          <img
+            src={tripPlanningLogo}
+            alt="Trip Planning Logo"
+            className="logo"
+          />
+        </Link>
+
+        {/* Botón hamburguesa */}
+        {userLogged && (
+          <button
+            className="navbar-toggler custom-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNavDropdown"
+            aria-controls="navbarNavDropdown"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+        )}
+
+        {/* Menú central*/}
+        {userLogged && (
+          <div className="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
+              <li className="nav-item">
+                <Link
+                  to="/"
+                  className="nav-link text-white"
+                  onClick={closeMenu}>
+                  Inicio
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link
+                  to="/trips"
+                  className="nav-link text-white"
+                  onClick={closeMenu}>
+                  Mis Viajes 
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link
+                  to="/create-trip"
+                  className="nav-link text-white"
+                  onClick={closeMenu}>
+                  Crear Viaje
+                </Link>
+              </li>
+              {/* <li className="nav-item">
+                <Link
+                  to="/activities"
+                  className="nav-link text-white"
+                  onClick={closeMenu}>
+                  Actividades
+                </Link>
+              </li> */}
+              {/* <li className="nav-item">
+                <Link
+                  to="/my-stories"
+                  className="nav-link text-white"
+                  onClick={closeMenu}>
+                  Stories
+                </Link>
+              </li> */}
+              {/* <li className="nav-item">
+                <Link
+                  to="/contact"
+                  className="nav-link text-white"
+                  onClick={closeMenu}>
+                  Contact
+                </Link>
+              </li> */}
+            </ul>
+          </div>
+        )}
+
+        {/* Botones a la derecha */}
+        <div className="d-flex gap-3">
+          {userLogged ?
+            <button
+              onClick={() => {
+                handleLogIn();
+                closeMenu();
+              }}
+              type="button"
+              className="btn btn-login d-flex align-items-center px-3">
+              <i className="fa-solid fa-arrow-right-from-bracket fa-2xs"></i>
+              Cerrar sesión
+            </button>
+            :
+            <button
+              onClick={() => {
+                handleLogIn();
+                closeMenu();
+              }}
+              type="button"
+              className="btn btn-login d-flex align-items-center px-3">
+              <i className="fa-solid fa-right-to-bracket fa-2xs"></i>
+              Iniciar sesión
+            </button>}
+            {userLogged ?
+            <button
+              onClick={() => {
+                handleRegister();
+                closeMenu();
+              }}
+              type="button"
+              className="btn btn-login d-flex align-items-center">
+              <i className="fas fa-cog"></i>
+              Ajustes
+            </button>
+            :
+            <button
+              onClick={() => {
+                handleRegister();
+                closeMenu();
+              }}
+              type="button"
+              className="btn btn-login d-flex align-items-center">
+              <i className="fas fa-user-plus fa-2xs py-2"></i>
+              Registrarse
+            </button>}
+        </div>
+      </div>
+    </nav>
+  );
 };

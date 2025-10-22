@@ -26,8 +26,7 @@ def has_no_empty_params(rule):
 def generate_sitemap(app):
     links = ['/admin/']
     for rule in app.url_map.iter_rules():
-        # Filter out rules we can't navigate to in a browser
-        # and rules that require parameters
+        # Filter out rules we can't navigate to in a browser and rules that require parameters
         if "GET" in rule.methods and has_no_empty_params(rule):
             url = url_for(rule.endpoint, **(rule.defaults or {}))
             if "/admin/" not in url:
@@ -43,5 +42,4 @@ def generate_sitemap(app):
             <ul style="text-align: left;">
                 """ + links_html + """
             </ul>
-        </div>
-        """
+        </div>"""
