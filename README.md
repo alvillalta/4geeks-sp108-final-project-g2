@@ -2,6 +2,22 @@
 
 A trip-planning web application where users can discover travel destinations and create personalized itineraries.
 
+## Demo
+
+This demo shows the main navigation behavior of the **Hello World** application.  
+
+### 🔹 Desktop Preview
+![Navigation](src/front/assets/img/hello-world-gif.gif)
+
+### 🔹 Key Screens
+| Home | Character Details | Favorites |
+|------|-------------------|-----------|
+| ![Home](src/front/assets/img/1.png) | ![Details](src/front/assets/img/2.png) | ![Favorites](src/front/assets/img/3.png) |
+
+| Home | Character Details | Favorites |
+|------|-------------------|-----------|
+| ![Home](src/front/assets/img/4.png) | ![Details](src/front/assets/img/5.png) | ![Favorites](src/front/assets/img/6.png) |
+
 ## Tech Stack
 
 **Frontend:** React, Bootstrap  
