@@ -2,6 +2,14 @@
 
 A trip-planning web application where users can discover travel destinations and create personalized itineraries.
 
+## Features
+
+- Engineered 10+ REST API endpoints with **Flask**, supporting authentication and data handling.
+- Integrated the `Google Maps API` to enable interactive location selection and activity list creation.
+- Built a **Bootstrap**-powered interface with conditional rendering in React for adaptive UI.
+
+---
+
 ## Demo
 
 This demo shows the main application behavior of **Hello World**.
@@ -116,14 +124,6 @@ Once both servers are running:
 
 - The React application will start at port `http://localhost:3000`
 - The Flask API will be available at its configured port `http://localhost:3001`
-
----
-
-## Features
-
-- Engineered 10+ REST API endpoints with **Flask**, supporting authentication and data handling.
-- Integrated the `Google Maps API` to enable interactive location selection and activity list creation.
-- Built a **Bootstrap**-powered interface with conditional rendering in React for adaptive UI.
 
 ---
 
