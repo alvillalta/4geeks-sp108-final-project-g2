@@ -9,7 +9,10 @@ This demo shows the main application behavior of **Hello World**.
 ### Navigation Preview
 ![Navigation](src/front/assets/img/hello-world-gif.gif)
 
-### Key Screens
+### 🔹 Key Screens
+| Home | Character Details | Favorites |
+|------|-------------------|-----------|
+|| ![Details](src/front/assets/img/2.png) | ![Favorites](src/front/assets/img/3.png) |
 
 | Home |
 |------|
