@@ -4,19 +4,24 @@ A trip-planning web application where users can discover travel destinations and
 
 ## Demo
 
-This demo shows the main navigation behavior of the **Hello World** application.  
+This demo shows the main application behavior of **Hello World**.
 
-### 🔹 Desktop Preview
+### Navigation Preview
 ![Navigation](src/front/assets/img/hello-world-gif.gif)
 
-### 🔹 Key Screens
-| Home | Character Details | Favorites |
-|------|-------------------|-----------|
-| ![Home](src/front/assets/img/1.png) | ![Details](src/front/assets/img/2.png) | ![Favorites](src/front/assets/img/3.png) |
+### Key Screens
 
-| Home | Character Details | Favorites |
+| Home |
+|------|
+|![Home](src/front/assets/img/1.png)|
+
+| Login | Create Trip | Trips |
 |------|-------------------|-----------|
-| ![Home](src/front/assets/img/4.png) | ![Details](src/front/assets/img/5.png) | ![Favorites](src/front/assets/img/6.png) |
+| ![Login](src/front/assets/img/2.png) | ![Create Trip](src/front/assets/img/3.png) | ![Trips](src/front/assets/img/4.png) |
+
+| Activities | Create Activity | Activity Planning |
+|------|-------------------|-----------|
+| ![Activities](src/front/assets/img/5.png) | ![Create Activity](src/front/assets/img/6.png) | ![Activity Planning](src/front/assets/img/7.png) |
 
 ## Tech Stack
 
