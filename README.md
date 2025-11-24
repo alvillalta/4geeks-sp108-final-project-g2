@@ -32,6 +32,8 @@ This demo shows the main application behavior of **Hello World**.
 |------|-------------------|-----------|
 | ![Activities](src/front/assets/img/5.png) | ![Create Activity](src/front/assets/img/6.png) | ![Activity Planning](src/front/assets/img/7.png) |
 
+---
+
 ## Tech Stack
 
 **Frontend:** React, Bootstrap  
