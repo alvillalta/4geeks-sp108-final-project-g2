@@ -6,10 +6,11 @@ A trip-planning web application where users can discover travel destinations and
 
 This demo shows the main application behavior of **Hello World**.
 
-### Navigation Preview
-![Navigation](src/front/assets/img/hello-world-gif.gif)
+| Preview |
+|------|
+|![Navigation](src/front/assets/img/hello-world-gif.gif)|
 
-### 🔹 Key Screens
+### Key Screens
 
 | Home |
 |------|
